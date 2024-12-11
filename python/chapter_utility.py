@@ -8,7 +8,25 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from pydantic import BaseModel, Field
 
-import prompts
+SCENE_GENERATION_PROMPT = """
+    You are given the segment index, descriptions and the transcripts of clip segments from a video with timestamps in miliseconds. Combine the segments into scenes based on the 2 main steps:
+    Step 1: Check if the video segment can be a single scene or combine with other segments or broken down into multiple scenes based on the visual description and the transcript. A scene is a segment of the video where a continous block for storytelling unfolds within a specific time, place, and set of characters. The big long or single scenes should be broken into smaller sub-scenes to structure the videos coherently. The generated scenes will be used in the next step to generate chapters which are higher level of distinct content of the video, such as a topic change. The transcript or the description can be empty.
+    Step 2: Output the scene result in the structured format with start and end time of the scene in miliseconds and the description of the scene. Include the segment indexes that belong to the scene in the output.
+    
+    Here are the segment index, detailed descriptions and transcripts of the video segments:
+
+    ${descriptions}
+    """
+
+CHAPTER_GENERATION_PROMPT = """
+    You are given the descriptions and the transcripts of scenes. Combine the scenes into chapters based on the 2 main steps:
+    Step 1: Check if the scene can be a single chapter or combine with other scenes or broken down to create chapters based on the visual description and the transcript. A chapter is a collection of scenes or content that share a common theme, setting, or narrative purpose. Chapters are higher level of distinct content of the video, such as a topic change. The transcript or the description can be empty.
+    Step 2: Output the chapter result in the structured format with start and end time of the chapter in miliseconds and the title of the chapter. Keep the chapter title concise and descriptive. Include the scenes that belong to the chapter.
+
+    Here are the detailed descriptions and transcripts of the video scenes:
+
+    ${descriptions}
+    """
 
 
 class SegmentID(BaseModel):
@@ -227,7 +245,7 @@ class OpenAIAssistant:
                 messages.append({"role": "user", "content": user_prompt})
 
             completion = self.client.beta.chat.completions.parse(
-                analyzer=self.analyzer,
+                model=self.analyzer,
                 messages=messages,
                 response_format=response_format,
                 max_tokens=4096,
@@ -311,7 +329,7 @@ def generate_scenes(
         end_idx, next_segment_content = _get_next_processing_segments(
             contents, start_idx
         )
-        scene_generation_prompt = Template(prompts.SCENE_GENERATION_PROMPT).substitute(
+        scene_generation_prompt = Template(SCENE_GENERATION_PROMPT).substitute(
             descriptions=next_segment_content
         )
         scence_response = VideoSceneResponse(scenes=[])
@@ -396,7 +414,7 @@ def generate_chapters(
         if scene.transcript != "":
             description_and_transcript += f" ---- Transcript: {scene.transcript}\n\n"
         scene_descriptions += description_and_transcript
-    chapter_generation_prompt = Template(prompts.CHAPTER_GENERATION_PROMPT).substitute(
+    chapter_generation_prompt = Template(CHAPTER_GENERATION_PROMPT).substitute(
         descriptions=scene_descriptions
     )
     chapter_response = VideoChapterResponse(chapters=[])

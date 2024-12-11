@@ -1,6 +1,6 @@
-# Azure AI Search with Content Understanding Samples (Python)
+# Azure AI Content Understanding with Azure OpenAI Samples (Python)
 
-Welcome! Content Understanding is an innovative solution designed to analyze and interpret diverse media types, including documents, images, audio, and video. It transforms this content into structured, organized, and searchable data. In this sample, we will demonstrate how to index your files using the rich insights extracted from the Content Understanding API, and subsequently index these files with Azure Search to enhance their searchability.
+Welcome! Content Understanding is an innovative solution designed to analyze and interpret diverse media types, including documents, images, audio, and video. It transforms this content into structured, organized, and searchable data. In this sample, we will demonstrate how to extract semantic information from you file, and send these information to Azure OpenAI to achive complex works.
 
 
 - The samples in this repository default to the latest preview API version: **(2024-12-01-preview)**.
@@ -10,15 +10,14 @@ Welcome! Content Understanding is an innovative solution designed to analyze and
 
 | File | Description |
 | --- | --- |
-| [search_with_visual_document.ipynb](notebooks/search_with_visual_document.ipynb) | Extract custom fields with content understanding API, and used it to index the file in Azure search |
-| [search_with_video.ipynb](notebooks/search_with_video.ipynb) | Extract custom fields with content understanding API, and used it to index the file in Azure search |
+| [video_chapter_generation.ipynb](notebooks/video_chapter_generation.ipynb) | Extract semantic descriptions using content understanding API, and then leverage OpenAI to group into video chapters. |
 
 
 ## Getting started
 ### GitHub Codespaces
 You can run this repo virtually by using GitHub Codespaces, which will open a web-based VS Code in your browser.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?skip_quickstart=true&machine=basicLinux32gb&repo=901183239&ref=main&geo=UsEast&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?skip_quickstart=true&machine=basicLinux32gb&repo=902030950&ref=main&geo=UsEast&devcontainer_path=.devcontainer%2Fdevcontainer.json)
 
 ### Local environment
 
@@ -27,10 +26,10 @@ You can run this repo virtually by using GitHub Codespaces, which will open a we
     * [Azure Developer CLI (azd)](https://aka.ms/install-azd)
     * [Python 3.11+](https://www.python.org/downloads/)
 
-2. Make a new directory called `azure-ai-search-with-content-understanding-python` and clone this template into it using the `azd` CLI:
+2. Make a new directory called `azure-ai-content-understanding-with-azure-openai-python` and clone this template into it using the `azd` CLI:
 
     ```shell
-    azd init -t azure-ai-search-with-content-understanding-python
+    azd init -t azure-ai-content-understanding-with-azure-openai-python
     ```
 
     You can also use git to clone the repository if you prefer.
@@ -52,12 +51,8 @@ You can run this repo virtually by using GitHub Codespaces, which will open a we
 1. Create [Azure AI Services resource](docs/create_azure_ai_service.md)
 1. Go to `Access Control (IAM)` in resource, grant yourself role `Cognitive Services User`
 1. Create [Azure OpenAI resource](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/create-resource?pivots=web-portal)
-1. Deploy GPT model
-1. Deploy embedding model
+1. Deploy GPT model newer than `gpt-4o`
 1. Go to `Access Control (IAM)` in resource, grant yourself role `Cognitive Services OpenAI User`
-1. Create [Azure Search resource](https://learn.microsoft.com/en-us/azure/search/search-create-service-portal)
-1. Go to `Access Control (IAM)` in resource, grant yourself role `Search Index Data Contributor`
-1. Go to `Access Control (IAM)` in resource, grant yourself role `Search Service Contributor`
 1. Copy `notebooks/.env.sample` to `notebooks/.env`
 1. Fill required information into .env from the resources you created
 
