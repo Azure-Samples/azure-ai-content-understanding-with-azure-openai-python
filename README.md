@@ -65,7 +65,7 @@ Navigate to the `notebooks` directory and select the sample notebook you are int
 ## More Samples using Azure Content Understanding
 [Azure Content Understanding Basic Usecase](https://github.com/Azure-Samples/azure-ai-content-understanding-python)
 
-[Azure Content Understanding with OpenAI](https://github.com/Azure-Samples/azure-ai-content-understanding-with-azure-openai-python)
+[Azure Search with Content Understanding](https://github.com/Azure-Samples/azure-ai-search-with-content-understanding-python)
 
 
 ## Notes
