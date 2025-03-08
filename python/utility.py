@@ -1,5 +1,6 @@
 from typing import Any, Union, Tuple
 import json
+import re
 from string import Template
 
 from openai import AzureOpenAI
