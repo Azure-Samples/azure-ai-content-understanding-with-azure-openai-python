@@ -28,6 +28,23 @@ CHAPTER_GENERATION_PROMPT = """
     ${descriptions}
     """
 
+DEDUP_PROMPT = """
+    Given an input list of tags, remove duplicate tags which are semantically similar.
+
+    Here is the input tag list:
+
+    ${tag_list}
+    """
+
+
+class VideoTagResponse(BaseModel):
+    """The video tag response analyzer
+    Attributes:
+        tags (list[str]): The list of tags
+    """
+
+    tags: list[str] = Field(..., description="The list of tags in the video")
+
 
 class SegmentID(BaseModel):
     """The video segment id analyzer
@@ -422,3 +439,31 @@ def generate_chapters(
         "", chapter_generation_prompt, VideoChapterResponse
     )
     return chapter_response
+
+def aggregate_tags(
+        video_segment_result: dict, openai_assistant: OpenAIAssistant
+) -> VideoTagResponse:
+    """Generate tags from the video segment result
+    Args:
+        video_segment_result (dict): The video segment result
+        openai_assistant (shared_functions.AiAssistant): The AI assistant client
+    Returns:
+        VideoTagResponse: list of tags
+    """
+    contents = video_segment_result["result"]["contents"]
+    tags = []
+
+    for content in contents:
+        value_str = content["fields"]["tags"]["valueString"]
+        segment_tags = list(map(str.lower, value_str.split(',')))
+        tags.extend(segment_tags)
+
+    tags_dedup = set(map(lambda x: re.sub(r'^ ', '', x), tags))
+    tag_dedup_prompt = Template(DEDUP_PROMPT).substitute(tag_list=tags_dedup)
+
+    tag_response = VideoTagResponse(tags=[])
+    tag_response = openai_assistant.get_structured_output_answer(
+        "", tag_dedup_prompt, VideoTagResponse
+    )
+
+    return tag_response
