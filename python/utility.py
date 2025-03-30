@@ -21,8 +21,8 @@ SCENE_GENERATION_PROMPT = """
 
 CHAPTER_GENERATION_PROMPT = """
     You are given the descriptions and the transcripts of scenes. Combine the scenes into chapters based on the 2 main steps:
-    Step 1: Check if the scene can be a single chapter or combine with other scenes or broken down to create chapters based on the visual description and the transcript. A chapter is a collection of scenes or content that share a common theme, setting, or narrative purpose. Chapters are higher level of distinct content of the video, such as a topic change. The transcript or the description can be empty.
-    Step 2: Output the chapter result in the structured format with start and end time of the chapter in miliseconds and the title of the chapter. Keep the chapter title concise and descriptive. Include the scenes that belong to the chapter.
+    Step 1: Check if the scene can be a single chapter or combine with other scenes or broken down to create chapters based on the visual description and the transcript. A chapter is a collection of scenes or content that share a common theme, setting, or narrative purpose. Chapters are higher level of distinct content of the video, such as a topic change. The transcript or the description can be empty. Don't generate too short chapters as they are higher level of content.
+    Step 2: Output the chapter result in the structured format with start and end time of the chapter in miliseconds and the title of the chapter. Keep the chapter title concise and descriptive. Include the scene indexes that belong to the chapter.
 
     Here are the detailed descriptions and transcripts of the video scenes:
 
@@ -121,7 +121,7 @@ class VideoChapter(BaseModel):
         startTimeMs (int): The start time stamp of the chapter in miliseconds
         endTimeMs (int): The end time stamp of the chapter in miliseconds
         title (str): The title of the chapter
-        scenes (list[VideoScene]): The list of scenes in the chapter
+        scene_ids (list[int]): The list of indexes in the chapter
     """
 
     startTimeMs: int = Field(
@@ -131,9 +131,7 @@ class VideoChapter(BaseModel):
         ..., description="The end time stamp of the chapter in miliseconds."
     )
     title: str = Field(..., description="The title of the chapter.")
-    scenes: list[VideoScene] = Field(
-        ..., description="The list of scenes in the chapter."
-    )
+    scene_ids: list[int] = Field(..., description="The list of scene indexes.")
 
 
 class VideoChapterResponse(BaseModel):
@@ -176,7 +174,7 @@ class OpenAIAssistant:
                 api_key=aoai_api_key,
             )
 
-        self.analyzer = deployment_name
+        self.model = deployment_name
 
     @retry(
         wait=wait_random_exponential(multiplier=1, max=40), stop=stop_after_attempt(3)
@@ -184,7 +182,7 @@ class OpenAIAssistant:
     def _chat_completion_request(self, messages, tools=None, tool_choice=None):
         try:
             response = self.client.chat.completions.create(
-                analyzer=self.analyzer,
+                model=self.model,
                 messages=messages,
                 tools=tools,
                 tool_choice=tool_choice,
@@ -263,7 +261,7 @@ class OpenAIAssistant:
                 messages.append({"role": "user", "content": user_prompt})
 
             completion = self.client.beta.chat.completions.parse(
-                model=self.analyzer,
+                model=self.model,
                 messages=messages,
                 response_format=response_format,
                 max_tokens=4096,
@@ -291,7 +289,7 @@ def get_token_count(text: str, model_name: str = "gpt-4o") -> int:
 
 
 def _get_next_processing_segments(
-    contents: list, start_idx: int, token_size_threshold: int = 4000
+    contents: list, start_idx: int, token_size_threshold: int = 32000
 ) -> Tuple[int, str]:
     """Get the next set of processing segments
     Args:
@@ -425,9 +423,9 @@ def generate_chapters(
         return []
 
     scene_descriptions = ""
-    for scene in scenes:
+    for idx, scene in enumerate(scenes):
         description_and_transcript = (
-            f"From {scene.startTimeMs}ms to {scene.endTimeMs}ms: {scene.description} "
+            f"Scene Index {idx} -- From {scene.startTimeMs}ms to {scene.endTimeMs}ms: {scene.description} "
         )
         if scene.transcript != "":
             description_and_transcript += f" ---- Transcript: {scene.transcript}\n\n"
