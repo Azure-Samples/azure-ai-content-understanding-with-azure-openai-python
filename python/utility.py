@@ -9,6 +9,25 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from pydantic import BaseModel, Field
 
+CUSTOM_SEGMENT_GENERATION_PROMPT = """
+    You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments from a video. Generate new customized segments given some instructions. Make sure the output segments are CONTINUOUS which means the end time of the previous segment is the start time of the next segment and no time gap or overlap between the segments. 
+
+    Here are the instructions to generate the customized segments:
+
+    ${segment_definition}
+
+
+    Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords.
+    Use the details in the grounding to find the relationship (e.g. same events, same people, sharing the same brand, characters, storylines, topic, or anchor, appear to be part of the same visual setup, contextually or thematically linked, even if not adjacent, represent a coherent story or show) between original segments 
+    and group the nearby segments with similar content together.
+    The data fields from the original segments might not always correct, unknown or limited to local information as the data were extracted locally. 
+    Use the global information to correct the data fields and help with the generation process.
+
+    Here are the detailed descriptions, transcripts and the data fields of original segments:
+
+    ${grounding_data}
+    """
+
 SCENE_GENERATION_PROMPT = """
     You are given the segment index, descriptions and the transcripts of clip segments from a video with timestamps in miliseconds. Combine the segments into scenes based on the 2 main steps:
     Step 1: Check if the video segment can be a single scene or combine with other segments or broken down into multiple scenes based on the visual description and the transcript. A scene is a segment of the video where a continous block for storytelling unfolds within a specific time, place, and set of characters. The big long or single scenes should be broken into smaller sub-scenes to structure the videos coherently. The generated scenes will be used in the next step to generate chapters which are higher level of distinct content of the video, such as a topic change. The transcript or the description can be empty.
@@ -55,9 +74,33 @@ class SegmentID(BaseModel):
 
     id: int = Field(..., description="The index of video segment.")
 
+### The video customized segment structure output ###
 
+class VideoCustomSegment(BaseModel):
+
+    startTime: int = Field(
+        ..., description="The start time stamp of the segment in milliseconds."
+    )
+    endTime: int = Field(
+        ..., description="The end time stamp of the segment in milliseconds."
+    )
+    SegmentClassification: str = Field(..., description="Classify the segment type. There are 3 possible values: TV Program, Promos, Commercial. DO NOT classify and DO NOT separate a visual overlay or promotional banners as Promos. Only classify segments as Promos if they involve a distinct visual change or interruption that clearly separates them from the ongoing program")
+    Title: str = Field(..., description="Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. For the unknown title, it might comes from the adjacent segments, so try to combine them.")
+    SegmentDescription: str = Field(..., description="Generate the description of the segment ")
+
+class VideoCustomSegmentList(BaseModel):
+    """The video customized segment 
+    Attributes:
+        segments (list[VideoCustomSegment]): The list of segments
+    """
+
+    segments: list[VideoCustomSegment] = Field(
+        ..., description="The list of customized segments."
+    )
+
+### The video scene structure output ###
 class VideoScene(BaseModel):
-    """The video scene analyzer
+    """The video scene 
     Attributes:
         startTimeMs (int): The start time stamp of the scene in miliseconds
         endTimeMs (int): The end time stamp of the scene in miliseconds
@@ -71,6 +114,7 @@ class VideoScene(BaseModel):
         ..., description="The end time stamp of the scene in miliseconds."
     )
     description: str = Field(..., description="The detail description of the scene.")
+
 
 
 class VideoSceneWithID(VideoScene):
@@ -264,7 +308,7 @@ class OpenAIAssistant:
                 model=self.model,
                 messages=messages,
                 response_format=response_format,
-                max_tokens=4096,
+                max_tokens=16000,
                 seed=seed,
                 temperature=temperature,
             )
@@ -287,9 +331,27 @@ def get_token_count(text: str, model_name: str = "gpt-4o") -> int:
     tokens = enc.encode(text)
     return len(tokens)
 
+def convert_seconds_to_hhmmssms(seconds: float) -> str:
+    """Convert seconds hh:mm:ss:ms string"""
+    if seconds < 0:
+        return "00:00:00.000"
+
+    int_seconds = int(seconds)
+
+    # Calculate milliseconds
+    milliseconds = round((seconds - int_seconds) * 1000)
+
+    # Calculate hours, minutes, and seconds
+    hours = int_seconds // 3600
+    int_seconds %= 3600
+    minutes = int_seconds // 60
+    int_seconds %= 60
+
+    return f"{hours:02}:{minutes:02}:{int_seconds:02}.{milliseconds:03}"
+
 
 def _get_next_processing_segments(
-    contents: list, start_idx: int, token_size_threshold: int = 32000
+    contents: list, start_idx: int, token_size_threshold: int = 100000
 ) -> Tuple[int, str]:
     """Get the next set of processing segments
     Args:
@@ -304,9 +366,13 @@ def _get_next_processing_segments(
     while numb_tokens < token_size_threshold and end_idx < len(contents):
         start_time = contents[end_idx]["startTimeMs"]
         end_time = contents[end_idx]["endTimeMs"]
-        value_str = contents[end_idx]["fields"]["segmentDescription"]["valueString"]
+        field_data = ""
+        for field in contents[end_idx]["fields"]:
+            field_data += (
+                f"{field} : {contents[end_idx]['fields'][field]['valueString']}\n"
+            )
         descriptions = (
-            f"Segment {end_idx}: From {start_time}ms to {end_time}ms: {value_str}"
+            f"Segment {end_idx}: From {start_time}ms to {end_time}ms: \n   {field_data}"
         )
         description_tokens = get_token_count(descriptions)
         numb_tokens += description_tokens
@@ -324,9 +390,49 @@ def _get_next_processing_segments(
         end_idx += 1
     return end_idx, segment_contents
 
+def generate_custom_segments(
+    video_segment_result: dict, openai_assistant: OpenAIAssistant, segment_definition: str
+) -> VideoCustomSegmentList:
+    """Generate customized segments from the video segment result
+    Args:
+        video_segment_result (dict): The video segment result
+        openai_assistant (shared_functions.AiAssistant): The AI assistant client
+        segment_definition (str): The customized segment definition
+    Returns:
+        list: The list of customized segments
+    """
+    contents = video_segment_result["result"]["contents"]
+
+    start_idx = 0
+    end_idx = 0
+    final_custom_segment_list = []
+    while end_idx < len(contents):
+        # Generate the scenes from the pre-processed list
+        end_idx, next_segment_content = _get_next_processing_segments(
+            contents, start_idx
+        )
+        segment_generation_prompt = Template(CUSTOM_SEGMENT_GENERATION_PROMPT).substitute(
+            grounding_data=next_segment_content,
+            segment_definition=segment_definition
+        )
+        custom_segment_response = openai_assistant.get_structured_output_answer(
+            "", segment_generation_prompt, VideoCustomSegmentList
+        )
+        # Post-process to ouput the timestamp in hh:mm:ss:ms format
+        for segment in custom_segment_response.segments:
+            # Convert the start and end time to hh:mm:ss:ms format
+            segment.startTime = convert_seconds_to_hhmmssms(float(segment.startTime)/1000)
+            segment.endTime = convert_seconds_to_hhmmssms(float(segment.endTime)/1000)
+            # Append the customized segment to the final list
+            final_custom_segment_list.append(segment)
+
+        start_idx = end_idx
+
+    return VideoCustomSegmentList(segments=final_custom_segment_list)
+
 
 def generate_scenes(
-    video_segment_result: dict, openai_assistant: OpenAIAssistant
+    video_segment_result: dict, openai_assistant: OpenAIAssistant, segment_definition: str
 ) -> VideoSceneResponseWithTranscript:
     """Generate scenes from the video segment result
     Args:
@@ -345,8 +451,9 @@ def generate_scenes(
         end_idx, next_segment_content = _get_next_processing_segments(
             contents, start_idx
         )
-        scene_generation_prompt = Template(SCENE_GENERATION_PROMPT).substitute(
-            descriptions=next_segment_content
+        scene_generation_prompt = Template(CUSTOM_SEGMENT_GENERATION_PROMPT).substitute(
+            grounding_data=next_segment_content,
+            segment_definition=segment_definition
         )
         scence_response = VideoSceneResponse(scenes=[])
         scence_response = openai_assistant.get_structured_output_answer(
