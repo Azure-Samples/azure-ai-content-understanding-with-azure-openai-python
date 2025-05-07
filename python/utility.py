@@ -10,23 +10,36 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 from pydantic import BaseModel, Field
 
 CUSTOM_SEGMENT_GENERATION_PROMPT = """
-    You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments from a video. Generate new customized segments given some instructions. Make sure the output segments are CONTINUOUS which means the end time of the previous segment is the start time of the next segment and no time gap or overlap between the segments. 
+You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments in a video and maybe some last customized segment results as well.
 
-    Here are the instructions to generate the customized segments:
+Your task is to generate new customized segments given the definition about those customized segments. You can follow the following steps to do that:
 
-    ${segment_definition}
+Step 1: Analyze the customized segment definition to understand about the detail requirements. Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords 
+Step 2: Check if the last customized segment result is empty or not. Note that the last segment result will be empty if the video length is not too long or you are processing the beginning part.
+Step 3: Strictly follow customized segment definition to group or break down the original segments into the CONTINUOUS customized segments. 
+		Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords.
+        Use the details in the grounding to find the relationship (e.g. same events, same people, sharing the same brand, characters, storylines, topic, or anchor, appear to be part of the same visual setup, contextually or thematically linked, even if not adjacent, represent a coherent story or show) between original segments 
+		and group the nearby segments with similar content together.
+        If the last customized segment result is not empty, check if the last customized segment is still a valid customized segment or can be combined with other segments or broken down 
+        to create continuous customized segments        
+		The data fields from the original segments might not always correct or limited to local information as the data were extracted locally. 
+		Use the global information to correct the data fields and help with the generation process.
 
+Step 4: List out the key or highlighted requests. The key or highlighted requests are normally in the uppercase or comes with IMPORTANT or KEY keyword. What segments do not satisfy the key or highlight requests? Look at the content, transcript or time infor to decide.
+Step 5: Correct the wrong segments, then re-group and update the segment results. Make sure the output segments are continuous without any time gap or overlap
+Step 6: Re-generate the customized segments with the corrected infor. 
+Step 7: Generate the data fields for the new customized segments.
+Step 8: Output the customized segment result with start and end time of the segments. The customized segments must be CONTINUOUS which means the end time of the previous segment is the start time of the next segment and no time gap or overlap between the segments. 
 
-    Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords.
-    Use the details in the grounding to find the relationship (e.g. same events, same people, sharing the same brand, characters, storylines, topic, or anchor, appear to be part of the same visual setup, contextually or thematically linked, even if not adjacent, represent a coherent story or show) between original segments 
-    and group the nearby segments with similar content together.
-    The data fields from the original segments might not always correct, unknown or limited to local information as the data were extracted locally. 
-    Use the global information to correct the data fields and help with the generation process.
+Here is the customized segment definition:
 
-    Here are the detailed descriptions, transcripts and the data fields of original segments:
+${segment_definition}
 
-    ${grounding_data}
-    """
+Here are the detailed descriptions, transcripts and the data fields of original segments:
+
+ ${grounding_data}
+"""
+
 
 SCENE_GENERATION_PROMPT = """
     You are given the segment index, descriptions and the transcripts of clip segments from a video with timestamps in miliseconds. Combine the segments into scenes based on the 2 main steps:
@@ -79,15 +92,15 @@ class SegmentID(BaseModel):
 class VideoCustomSegment(BaseModel):
 
     startTime: int = Field(
-        ..., description="The start time stamp of the segment in milliseconds."
+        ..., description="The start timestamp of the segment in hh:mm:ss.ms"
     )
     endTime: int = Field(
-        ..., description="The end time stamp of the segment in milliseconds."
+        ..., description="The end timestamp of the segment in hh:mm:ss.ms"
     )
     SegmentClassification: str = Field(..., description="Classify the segment type. There are 3 possible values: TV Program, Promos, Commercial. DO NOT classify and DO NOT separate a visual overlay or promotional banners as Promos. Only classify segments as Promos if they involve a distinct visual change or interruption that clearly separates them from the ongoing program")
+    SegmentClassificationReason: str = Field(..., description="The reason for the classification of the segment")
     Title: str = Field(..., description="Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. For the unknown title, it might comes from the adjacent segments, so try to combine them.")
-    SegmentDescription: str = Field(..., description="Generate the description of the segment ")
-
+    
 class VideoCustomSegmentList(BaseModel):
     """The video customized segment 
     Attributes:
@@ -304,14 +317,23 @@ class OpenAIAssistant:
             if user_prompt:
                 messages.append({"role": "user", "content": user_prompt})
 
+
             completion = self.client.beta.chat.completions.parse(
                 model=self.model,
                 messages=messages,
                 response_format=response_format,
-                max_tokens=16000,
-                seed=seed,
-                temperature=temperature,
+                reasoning_effort="low",
+                max_completion_tokens=100000
             )
+
+            # completion = self.client.beta.chat.completions.parse(
+            #     model=self.model,
+            #     messages=messages,
+            #     response_format=response_format,
+            #     max_tokens=16000,
+            #     seed=seed,
+            #     temperature=temperature,
+            # )
             response = completion.choices[0].message.parsed
             return response
         except Exception as ex:
@@ -349,6 +371,23 @@ def convert_seconds_to_hhmmssms(seconds: float) -> str:
 
     return f"{hours:02}:{minutes:02}:{int_seconds:02}.{milliseconds:03}"
 
+def _get_key_value(obj: dict) -> str:
+    if "valueString" in obj:
+        return obj["valueString"]
+    if "valueObject" in obj:
+        output_str = ""
+        for k, v in obj["valueObject"].items():
+            v_str = _get_key_value(v)
+            output_str += f"{k}: {v_str}\n"
+        return output_str
+    if "valueArray" in obj:
+        output_str = ""
+        for item in obj["valueArray"]:
+            v_str = _get_key_value(item)
+            output_str += f"{v_str}\n"
+        return output_str
+    
+
 
 def _get_next_processing_segments(
     contents: list, start_idx: int, token_size_threshold: int = 100000
@@ -364,24 +403,36 @@ def _get_next_processing_segments(
     segment_contents = ""
     numb_tokens = 0
     while numb_tokens < token_size_threshold and end_idx < len(contents):
-        start_time = contents[end_idx]["startTimeMs"]
-        end_time = contents[end_idx]["endTimeMs"]
-        field_data = ""
-        for field in contents[end_idx]["fields"]:
-            field_data += (
-                f"{field} : {contents[end_idx]['fields'][field]['valueString']}\n"
-            )
-        descriptions = (
-            f"Segment {end_idx}: From {start_time}ms to {end_time}ms: \n   {field_data}"
-        )
+        start_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["startTimeMs"]) / 1000)
+        end_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["endTimeMs"]) / 1000)
+        descriptions = ""
+        if "subsegments" in contents[end_idx]["fields"]:
+            subsegments = contents[end_idx]["fields"]["subsegments"]
+            for segment in subsegments["valueArray"]:
+                stime = segment["valueObject"]["startTime"]["valueString"]
+                etime = segment["valueObject"]["endTime"]["valueString"]
+                descriptions += (
+                    f"From {stime} to {etime}: \n "
+                )
+                for k, v in segment["valueObject"].items():
+                    if k != "startTime" and k != "endTime":
+                        v_str = _get_key_value(v)
+                        descriptions += f"{k} : {json.dumps(v_str, ensure_ascii=False)}\n"
+        else:
+            descriptions += f"From {start_time} to {end_time}: \n "
+            for k, v in contents[end_idx]["fields"].items():
+                descriptions += f"{k} : {json.dumps(v, ensure_ascii=False)}\n"
+
         description_tokens = get_token_count(descriptions)
         numb_tokens += description_tokens
         transcripts = "---- Transcript: \n"
         for item in contents[end_idx]["transcriptPhrases"]:
+            t_stime = convert_seconds_to_hhmmssms(float(item["startTimeMs"]) / 1000)
+            t_etime = convert_seconds_to_hhmmssms(float(item["endTimeMs"]) / 1000)
             transcripts += (
-                str(item["startTimeMs"])
-                + "ms --> "
-                + str(item["endTimeMs"])
+                str(t_stime)
+                + "--> "
+                + str(t_etime)
                 + "ms : "
                 + item["text"]
             )
@@ -389,6 +440,8 @@ def _get_next_processing_segments(
         segment_contents += descriptions + transcripts
         end_idx += 1
     return end_idx, segment_contents
+
+
 
 def generate_custom_segments(
     video_segment_result: dict, openai_assistant: OpenAIAssistant, segment_definition: str
@@ -405,7 +458,6 @@ def generate_custom_segments(
 
     start_idx = 0
     end_idx = 0
-    final_custom_segment_list = []
     while end_idx < len(contents):
         # Generate the scenes from the pre-processed list
         end_idx, next_segment_content = _get_next_processing_segments(
@@ -418,17 +470,10 @@ def generate_custom_segments(
         custom_segment_response = openai_assistant.get_structured_output_answer(
             "", segment_generation_prompt, VideoCustomSegmentList
         )
-        # Post-process to ouput the timestamp in hh:mm:ss:ms format
-        for segment in custom_segment_response.segments:
-            # Convert the start and end time to hh:mm:ss:ms format
-            segment.startTime = convert_seconds_to_hhmmssms(float(segment.startTime)/1000)
-            segment.endTime = convert_seconds_to_hhmmssms(float(segment.endTime)/1000)
-            # Append the customized segment to the final list
-            final_custom_segment_list.append(segment)
 
         start_idx = end_idx
 
-    return VideoCustomSegmentList(segments=final_custom_segment_list)
+    return custom_segment_response
 
 
 def generate_scenes(
