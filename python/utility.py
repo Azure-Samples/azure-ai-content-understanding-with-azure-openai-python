@@ -1,4 +1,4 @@
-from typing import Any, Union, Tuple
+from typing import Any, Union, Tuple, List
 import json
 import re
 from string import Template
@@ -100,14 +100,15 @@ class VideoCustomSegment(BaseModel):
     SegmentClassification: str = Field(..., description="Classify the segment type. There are 3 possible values: TV Program, Promos, Commercial. DO NOT classify and DO NOT separate a visual overlay or promotional banners as Promos. Only classify segments as Promos if they involve a distinct visual change or interruption that clearly separates them from the ongoing program")
     SegmentClassificationReason: str = Field(..., description="The reason for the classification of the segment")
     Title: str = Field(..., description="Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. For the unknown title, it might comes from the adjacent segments, so try to combine them.")
+    SegmentDescription: str = Field(..., description="Description of the segment content")
     
 class VideoCustomSegmentList(BaseModel):
-    """The video customized segment 
+    """The video customized segment list 
     Attributes:
         segments (list[VideoCustomSegment]): The list of segments
     """
 
-    segments: list[VideoCustomSegment] = Field(
+    segments: List[VideoCustomSegment] = Field(
         ..., description="The list of customized segments."
     )
 
@@ -405,7 +406,7 @@ def _get_next_processing_segments(
     while numb_tokens < token_size_threshold and end_idx < len(contents):
         start_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["startTimeMs"]) / 1000)
         end_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["endTimeMs"]) / 1000)
-        descriptions = ""
+        descriptions = "\n"
         if "subsegments" in contents[end_idx]["fields"]:
             subsegments = contents[end_idx]["fields"]["subsegments"]
             for segment in subsegments["valueArray"]:
@@ -415,13 +416,14 @@ def _get_next_processing_segments(
                     f"From {stime} to {etime}: \n "
                 )
                 for k, v in segment["valueObject"].items():
-                    if k != "startTime" and k != "endTime":
+                    if k != "startTime" and k != "endTime" and k!= "SegmentClassificationReason":
                         v_str = _get_key_value(v)
                         descriptions += f"{k} : {json.dumps(v_str, ensure_ascii=False)}\n"
         else:
             descriptions += f"From {start_time} to {end_time}: \n "
             for k, v in contents[end_idx]["fields"].items():
-                descriptions += f"{k} : {json.dumps(v, ensure_ascii=False)}\n"
+                v_str = _get_key_value(v)
+                descriptions += f"{k} : {json.dumps(v_str, ensure_ascii=False)}\n"
 
         description_tokens = get_token_count(descriptions)
         numb_tokens += description_tokens
@@ -458,6 +460,7 @@ def generate_custom_segments(
 
     start_idx = 0
     end_idx = 0
+    final_custom_segment_list = []
     while end_idx < len(contents):
         # Generate the scenes from the pre-processed list
         end_idx, next_segment_content = _get_next_processing_segments(
@@ -471,9 +474,24 @@ def generate_custom_segments(
             "", segment_generation_prompt, VideoCustomSegmentList
         )
 
+        is_seconds = True if (isinstance(custom_segment_response.segments[0].endTime, int) and custom_segment_response.segments[0].endTime < 1000) else False
+        # post_process the customized segments
+        for idx, segment in enumerate(custom_segment_response.segments):
+            if isinstance(segment.endTime, int):
+                if is_seconds:
+                    # the time is in seconds
+                    start_time = convert_seconds_to_hhmmssms(float(segment.startTime))
+                    end_time = convert_seconds_to_hhmmssms(float(segment.endTime) )
+                else:
+                    # the time is in milliseconds
+                    start_time = convert_seconds_to_hhmmssms(float(segment.startTime) / 1000)
+                    end_time = convert_seconds_to_hhmmssms(float(segment.endTime) / 1000)
+                segment.startTime = start_time
+                segment.endTime = end_time
+            final_custom_segment_list.append(segment)
         start_idx = end_idx
 
-    return custom_segment_response
+    return VideoCustomSegmentList(segments=final_custom_segment_list)
 
 
 def generate_scenes(
