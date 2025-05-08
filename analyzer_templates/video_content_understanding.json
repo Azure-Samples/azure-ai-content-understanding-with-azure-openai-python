@@ -1,91 +1,103 @@
 {
-  "description": "Generating content understanding from video.",
-  "scenario": "videoShot",
-  "config": {
-      "returnDetails": true,
-      "locales": [
-          "en-US",
-          "es-ES",
-          "es-MX",
-          "fr-FR",
-          "hi-IN",
-          "it-IT",
-          "ja-JP",
-          "ko-KR",
-          "pt-BR",
-          "zh-CN"
-      ],
-      "enableFace": true,
-      "disableFaceBlurring": true,
-      "disableContentFiltering": true,
-      "_experimental": {
-        "samplingMethod": "uniform_fixed_gap",
-        "sparseKeyframeGapInSeconds": "1",
-        "videoSegmentMethod": "fixed_chunk",
-        "chunkIntervalInSeconds": "70",
-        "maxImageCount": "70"
-      }
-  },
-  "fieldSchema": {
-      "name": "Content Understanding",
-      "descriptions": "You are an intelligent broadcast media analysis assistant. You will be presented with segments of videos from a broadcast that contain a mix of TV Programs,Program Promos, and advertisements.",
-      "fields": {
-        "Subsegments": {
-            "type": "array",
-            "method": "generate",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "StartTime": {
-                        "type": "string",
-                        "method": "generate",
-                        "description": "The start time of the segment in hh:mm:ss.ms format. "
-                    },
-                    "EndTime": {
-                        "type": "string",
-                        "method": "generate",
-                        "description": "The end time of the segment in hh:mm:ss.ms format"
-                    },
-                    "SegmentClassification": {
-                        "type": "string",
-                        "method": "classify",
-                        "description": "Classify the video segment types: TV Program, Promo, Commercials, or Unknown. Do not make it up. Just say Unknown if you don't know",
-                        "enum": [
-                            "TV Program",
-                            "Promo",
-                            "Commercials",
-                            "Unknown"
-                        ],
-                        "enumDescriptions": {
-                            "TV Program": "Tv Programs are the full-length TV program and the currently running shows. Instructions for TV Programs: - When a title card appears that indicates a start of program, do not mark it as promo segment. - **Strictly follow it: If a title card appears with a different name than the program which is running previously, consider it as a start of new program, do not make any assumptions that it's a part of previous program, or just a character introduction in previous program. Same TV program can have distinct scenes, but the scenes should be merged into one TV program segment.",
-                            "Promo": "Promos are short promotional clips for upcoming programs on the same or partner channels. These usually mention air times/days and do not promote brands or products.Instructions for Promos: - If a visual overlay or promotion banner for another program appears during a running show (usually as a banner at top or bottom of the screen) without a full visual change, do not classify it as a Promo and do not separate it as the Promo segment- If a segment promotes a program but also mentions multiple brands or sponsors, classify it as a Commercial. - Identify the name of the program being promoted. - A Promo can be for the same program that is currently running, if it mentions airing time or day, and appears as a separate segment.- When a title card appears that indicates the start of program, do not mark it as promo segment.",
-                            "Commercials": "Commercials: A paid advertisement promoting a brand, product, or service. Instructions for Commercials: - Commercials promote a product, service, or brand. - Maintain consistent naming for Brand and Product across all occurrences of the same ad. - If the same ad appears at multiple times in the video, at differnet timestamps, **treat each occurrence as a separate segment** — do not merge them. Just ensure that their metadata (title, brand, category, sector) remains consistent.- Make sure none of the commercials are missed, shorter commercials of 3-5 seconds should also be captured.- Jenerally In early morning shows, there are no commercials, if found validate it properly and then mark it as Commercial.",
-                            "Unknown": "This is an unknown segment"
-                        }
-                    },
-                    "SegmentClassificationReason": {
-                        "type": "string",
-                        "method": "generate",
-                        "description": "Explain the reason for the classification of the segment. Do not make it up."
-                    },
-                    "Title": {
-                        "type": "string",
-                        "method": "generate",
-                        "description": "Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product"
-                      },
-                    "People": {  
-                        "type": "string",  
-                        "method": "generate",  
-                        "description": "List the people in the segment if available."
-                    },
-                    "SegmentDescription": {
-                        "type": "string",
-                        "method": "generate",
-                        "description": "Describe in detail what is happening in the video segment to help identify TV Programs, Promos, and advertisements. Include the people information. Try to find the relationship with adjacent segments."
-                    }
-                }
-            }
+    "description": "Generating content understanding from video.",
+    "scenario": "videoShot",
+    "config": {
+        "returnDetails": true,
+        "locales": [
+            "en-US",
+            "es-ES",
+            "es-MX",
+            "fr-FR",
+            "hi-IN",
+            "it-IT",
+            "ja-JP",
+            "ko-KR",
+            "pt-BR",
+            "zh-CN"
+        ],
+        "enableFace": true,
+        "disableFaceBlurring": true,
+        "disableContentFiltering": true,
+        "_experimental": {
+          "enableDynamicSegmentationForLongShot": "false",
+          "samplingMethod": "uniform_fixed_gap",
+          "sparseKeyframeGapInSeconds": "1.5",
+          "videoSegmentMethod": "fixed_chunk",
+          "chunkIntervalInSeconds": "70",
+          "maxImageCount": "70",
+          "enableUserLens": "true"
         }
-       }
+    },
+    "fieldSchema": {
+        "name": "Content Understanding",
+        "descriptions": "You are an intelligent broadcast media analysis assistant. You will be presented with segments of videos from an Indian broadcast that contain a mix of TV Programs, Program Promomotion, and advertisements. The main language is Hindi. Break down the video into TV Programs,Program Promos, and advertisements segments and classify them. For each segment, provide a detailed description of what is happening in the video, including any people present, on-screen text, and the segment classification. Use the provided instructions to accurately classify each segment.",
+        "fields": {
+          "Subsegments": {
+              "type": "array",
+              "method": "generate",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "StartTime": {
+                          "type": "string",
+                          "method": "generate",
+                          "description": "The start time of the segment in hh:mm:ss.ms format. "
+                      },
+                      "EndTime": {
+                          "type": "string",
+                          "method": "generate",
+                          "description": "The end time of the segment in hh:mm:ss.ms format"
+                      },
+                      "SegmentClassificationReason": {
+                          "type": "string",
+                          "method": "generate",
+                          "description": "Explain the reason for the classification of the segment. Do not make it up."
+                      },
+                      "SegmentClassification": {
+                          "type": "string",
+                          "method": "classify",
+                          "description": "Classify the video segment types: TV Program, Promo, Commercials, or Unknown. Do not make it up. Just say Unknown if you don't know",
+                          "enum": [
+                              "TV Program",
+                              "Promo",
+                              "Commercials",
+                              "Unknown"
+                          ],
+                          "enumDescriptions": {
+                              "TV Program": "Tv Programs are the full-length TV program and the currently running shows. Instructions for TV Programs: - When a title card appears that indicates a start of program, do not mark it as promo segment. - **Strictly follow it: If a title card appears with a different name than the program which is running previously, consider it as a start of new program, do not make any assumptions that it's a part of previous program, or just a character introduction in previous program. Same TV program can have distinct scenes, but the scenes should be merged into one TV program segment.",
+                              "Promo": "Promos are short promotional clips for upcoming programs on the same or partner channels. These usually mention air times/days and do not promote brands or products.Instructions for Promos: - If a visual overlay or promotion banner for another program appears during a running show (usually as a banner at top or bottom of the screen) without a full visual change, do not classify it as a Promo and do not separate it as the Promo segment- If a segment promotes a program but also mentions multiple brands or sponsors, classify it as a Commercial. - Identify the name of the program being promoted. - A Promo can be for the same program that is currently running, if it mentions airing time or day, and appears as a separate segment.- When a title card appears that indicates the start of program, do not mark it as promo segment.",
+                              "Commercials": "Commercials: A paid advertisement promoting a brand, product, or service. Instructions for Commercials: - Commercials promote a product, service, or brand. - Maintain consistent naming for Brand and Product across all occurrences of the same ad. - If the same ad appears at multiple times in the video, at differnet timestamps, **treat each occurrence as a separate segment** — do not merge them. Just ensure that their metadata (title, brand, category, sector) remains consistent.- Make sure none of the commercials are missed, shorter commercials of 3-5 seconds should also be captured.- Jenerally In early morning shows, there are no commercials, if found validate it properly and then mark it as Commercial.",
+                              "Unknown": "This is an unknown segment"
+                          }
+                      },
+                      "Title": {
+                          "type": "string",
+                          "method": "generate",
+                          "description": "Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. StarPlus TV is the TV channel, do not use it for the TV program title."
+                        },                    
+                      "People": {  
+                          "type": "string",  
+                          "method": "generate",  
+                          "description": "List the people in the segment if available."
+                      },
+                      "Text": {  
+                          "type": "string",  
+                          "method": "generate",  
+                          "description": "include the on screen text in the original language. Use separate item for each unique instance. Do not make it up"
+                      },
+                      "Subtitles": {  
+                          "type": "string",  
+                          "method": "generate",  
+                          "description": "include the subtitles in the original language. Use separate item for each unique instance. If there are no subtitles, just say 'No subtitles'. Do not make it up"
+                      },
+                      "SegmentDescription": {
+                          "type": "string",
+                          "method": "generate",
+                          "description": "Describe in detail what is happening in the video segment. Starting with the background, the camera transition, the people, the objects, the on-screen text, and the segment classification. Include the people information. Try to find the relationship with adjacent segments."
+                      }
+                  }
+              }
+          }
+         }
+    }
   }
-}
