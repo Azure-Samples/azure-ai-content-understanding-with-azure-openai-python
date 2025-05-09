@@ -9,37 +9,55 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from pydantic import BaseModel, Field
 
-
 CUSTOM_SEGMENT_GENERATION_PROMPT = """
-You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments in a video.
+You are given the grounding data including descriptions, the transcripts and the additional data fields of chunks in a video.
 
-Your task is to group the original segments into new customized segments given the definition about those customized segments. Output the new customized segments with start-end timestamps, title of the segments, the segment classification, people in there. You can follow the following steps to do that:
+Your task is to group the chunks into (1) TV Programs, (2) Promos, or (3) Commercial segments.
 
-Step 1: Analyze the customized segment definition to understand about the detail requirements. Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords 
+1. Tv Programs are the full-length TV program and the currently running shows or movies. 
+	Instructions for TV Programs: 
+		- TV Programs are the main running shows. The actor or cast members are usually present in the segments. For movies, they normally come with subtitles.
+		- TV Programs follow the storyline of the show. If any inital segments are classified as TV Programs but do not follow the storyline or having different titles, they should belongs to either Promo or Commercial segments. Group them with the neighboring segments with most similar description or transcripts.
+		- When a title card appears that indicates a start of program, do not mark it as promo segment. 
+		- StarPlus TV is the TV channel, do not use it for the TV program title
+		- **Strictly follow it: If a title card appears with a different name than the program which is running previously, consider it as a start of new program, do not make any assumptions that it's a part of previous program, or just a character introduction in previous program. 
+		- **IMPORTANT* The 2 adjacent segments cannot be both TV Programs. If they have similar storyline, group them together. If there is a distinct storyline, the segment should be Promos or Commercials.
+		- TV Programs are not short clips or segments. They are normally longer than Promos and Commercials segments.
+2. Promos are short promotional clips for upcoming programs on the same or partner channels. These usually mention air times/days and do not promote brands or products.
+	Instructions for Promos: -  
+		**IMPORTANT** DO NOT classify promotion banners as Promos and DO NOT separate them as the promo segments. Only classify segments as Promos if they involve a distinct visual change or interruption that clearly separates them from the ongoing program 
+		- If a segment promotes a program but also mentions multiple brands or sponsors, classify it as a Commercial. 
+		- Identify the name of the program being promoted. 
+		- A Promo can be for the same program that is currently running, if it mentions airing time or day, and appears as a separate segment.
+		- When a title card appears that indicates the start of program, do not mark it as promo segment. 
+3. Commercials: A paid advertisement promoting a brand, product, or service. 
+	Instructions for Commercials: 
+		- Commercials promote a product, service, or brand. 
+		- Maintain consistent naming for Brand and Product across all occurrences of the same ad. 
+		- If the same ad appears at multiple times in the video, at differnet timestamps, **treat each occurrence as a separate segment** — do not merge them. Just ensure that their metadata (title, brand, category, sector) remains consistent.
+		- Make sure none of the commercials are missed, shorter commercials of 3-5 seconds should also be captured.
+		- Generally, In early morning shows, there are no commercials, if found validate it properly and then mark it as Commercial.
+		- DO NOT combine multiple commercials into a single segment. Each product, service, or brand should be treated as a separate segment, only combine segments if they're in the same ads.
 
-Step 2: Strictly follow customized segment definition to group the original segments into the CONTINUOUS customized segments. 
-        - Do not rely solely on the existing `segmentClassification` and `title` fields; they may contain errors. You can refer the title and segmentClassification.  If the title of a segment is empty or unknown, find the title from the related segments with similar people or content.
-        - Use similarity in transcript, description, and people fields to validate and group segments.
-        - If a segment has unknown or ambiguous metadata, group it with the neighboring segment that has the most similar metadata like people
-		- Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords.
-        - Use the details in the grounding to find the relationship (e.g. same events, same people, sharing the same brand, characters, storylines, topic, or anchor, appear to be part of the same visual setup, contextually or thematically linked, even if not adjacent, represent a coherent story or show) between original segments and group the nearby segments with similar content together.
-		- The data fields from the original segments might not always correct or limited to local information as the data were extracted locally. Use the global information to correct the data fields and help with the generation process.
 
-Step 3: List out the key or highlighted requests. The key or highlighted requests are normally in the uppercase or comes with IMPORTANT or KEY keyword. What segments do not satisfy the key or highlight requests? Look at the content, transcript or time infor to decide.
-Step 4: Correct the wrong segments, then re-group and update the segment results. Make sure the output segments are continuous without any time gap or overlap
-Step 5: Re-generate the customized segments with the corrected infor. 
-Step 6: Generate the data fields for the new customized segments.
-Step 7: Output the customized segment result with start and end time of the segments in the hh:mm:ss.ms format. The customized segments must be CONTINUOUS which means the end time of the previous segment is the start time of the next segment and no time gap or overlap between the segments. 
+Output the customized segments with following infor:
+1. start time and end time for each segment in the hh:mm:ss.ms format. The customized segments must be CONTINUOUS which means the end time of the previous segment is the start time of the next segment and no time gap or overlap between the segments. 
+2. SegmentClassificationReason: Explain the reason for the classification of the segment
+3. SegmentClassification: One value from TV Program, Promos or Commercial
+4. Title: the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. StarPlus TV is the TV channel, do not use it for the TV program title.
+5. People: List the people in the segment if available
 
-Here is the customized segment definition:
+Besides descriptions and transcripts, use face or person identification to help with the logical grouping as the same people will be likely in the same segment
+Group the segments with similar titles or related products together. For unknown segments or unknown data fields, the segments were extracted locally and thus missed the global context, group it with the neighboring segments with most similar description or transcript
+Do not rely solely on the existing `segmentClassification` and `title` fields; they may contain errors. You can refer the title and segmentClassification from adjacent segments.  
+**IMPORTANT** If the title of a segment is unknown or not clear, the segment should be grouped with adjacent segments and find the title from the adjacent segments with similar people or content or storyline.
 
-${segment_definition}
+                        
 
 Here are the detailed descriptions, transcripts and the data fields of original segments:
 
- ${grounding_data}
+${grounding_data}
 """
-
 
 
 SCENE_GENERATION_PROMPT = """
@@ -394,7 +412,7 @@ def _get_key_value(obj: dict) -> str:
 
 
 def _get_next_processing_segments(
-    contents: list, start_idx: int, token_size_threshold: int = 100000, duration_threshold: int = 900000
+    contents: list, start_idx: int, token_size_threshold: int = 100000, duration_threshold: int = 910000
 ) -> Tuple[int, str]:
     """Get the next set of processing segments
     Args:
@@ -418,14 +436,14 @@ def _get_next_processing_segments(
                 stime = segment["valueObject"]["startTime"]["valueString"]
                 etime = segment["valueObject"]["endTime"]["valueString"]
                 descriptions += (
-                    f"From {stime} to {etime}: \n "
+                    f"Segment From {stime} to {etime}: \n "
                 )
                 for k, v in segment["valueObject"].items():
                     if k != "startTime" and k != "endTime" and k!= "SegmentClassificationReason":
                         v_str = _get_key_value(v)
                         descriptions += f"{k} : {json.dumps(v_str, ensure_ascii=False)}\n"
         else:
-            descriptions += f"From {start_time} to {end_time}: \n "
+            descriptions += f"Segment From {start_time} to {end_time}: \n "
             for k, v in contents[end_idx]["fields"].items():
                 v_str = _get_key_value(v)
                 descriptions += f"{k} : {json.dumps(v_str, ensure_ascii=False)}\n"
@@ -440,13 +458,14 @@ def _get_next_processing_segments(
                 str(t_stime)
                 + "--> "
                 + str(t_etime)
-                + "ms : "
+                + ": "
                 + item["text"]
             )
         numb_tokens += get_token_count(transcripts)
         segment_contents += descriptions + transcripts
         if contents[end_idx]["endTimeMs"] - start_processing_time > duration_threshold:
             # stop processing if the processing over 15 minutes
+            end_idx += 1
             break
         end_idx += 1
 
@@ -476,7 +495,7 @@ def _format_segment_time(custom_segments:VideoCustomSegmentList, is_seconds: boo
     return custom_segment_list
 
 def generate_custom_segments(
-    video_segment_result: dict, openai_assistant: OpenAIAssistant, segment_definition: str
+    video_segment_result: dict, openai_assistant: OpenAIAssistant
 ) -> VideoCustomSegmentList:
     """Generate customized segments from the video segment result
     Args:
@@ -498,9 +517,8 @@ def generate_custom_segments(
         )
         segment_generation_prompt = Template(CUSTOM_SEGMENT_GENERATION_PROMPT).substitute(
             grounding_data=next_segment_content,
-            segment_definition=segment_definition
         )
-        custom_segment_response = VideoCustomSegmentList(segments=[])
+
         custom_segment_response = openai_assistant.get_structured_output_answer(
             "", segment_generation_prompt, VideoCustomSegmentList
         )
@@ -508,12 +526,9 @@ def generate_custom_segments(
         # post_process the customized segments
         is_seconds = True if (isinstance(custom_segment_response.segments[0].endTime, int) and custom_segment_response.segments[0].endTime < 1000) else False
         custom_segment_list.extend(_format_segment_time(custom_segment_response, is_seconds))
+            
         start_idx = end_idx
-    
-        # save the customized segments to the file
-        with open(f"custom_segment{start_idx}.txt", "w") as f:
-            for i,segment in enumerate(custom_segment_list):
-                f.write(f"Segment {i}: {segment.model_dump_json(indent=2)} \n ")
+
     
     # 2nd round to merge results from 15 minute chunks
     grounding_data = ""
@@ -523,10 +538,10 @@ def generate_custom_segments(
         grounding_data += f"SegmentClassificationReason: {segment.SegmentClassificationReason}\n"
         grounding_data += f"Title: {segment.Title}\n"
         grounding_data += f"SegmentDescription: {segment.SegmentDescription}\n"
+        grounding_data += f"People: {segment.People}\n"
 
     segment_generation_prompt = Template(CUSTOM_SEGMENT_GENERATION_PROMPT).substitute(
-        grounding_data=grounding_data,
-        segment_definition=segment_definition
+        grounding_data=grounding_data
     )
     
     custom_segment_response = openai_assistant.get_structured_output_answer(
