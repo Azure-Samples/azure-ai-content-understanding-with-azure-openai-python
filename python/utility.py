@@ -9,15 +9,16 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from pydantic import BaseModel, Field
 
-CUSTOM_SEGMENT_GENERATION_PROMPT = """
-You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments in a video and maybe some last customized segment results as well.
 
-Your task is to generate new customized segments given the definition about those customized segments. Output the new customized segments with start-end timestamps, title of the segments, the segment classification. You can follow the following steps to do that:
+CUSTOM_SEGMENT_GENERATION_PROMPT = """
+You are given the grounding data including descriptions, the transcripts and the additional data fields of original segments in a video.
+
+Your task is to group the original segments into new customized segments given the definition about those customized segments. Output the new customized segments with start-end timestamps, title of the segments, the segment classification, people in there. You can follow the following steps to do that:
 
 Step 1: Analyze the customized segment definition to understand about the detail requirements. Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords 
 
 Step 2: Strictly follow customized segment definition to group the original segments into the CONTINUOUS customized segments. 
-        - Do not rely solely on the existing `segmentClassification` and `title` fields; they may contain errors. If the title of a segment is empty, find the title from the related segments with similar people or content.
+        - Do not rely solely on the existing `segmentClassification` and `title` fields; they may contain errors. You can refer the title and segmentClassification.  If the title of a segment is empty or unknown, find the title from the related segments with similar people or content.
         - Use similarity in transcript, description, and people fields to validate and group segments.
         - If a segment has unknown or ambiguous metadata, group it with the neighboring segment that has the most similar metadata like people
 		- Pay attention to the key or highlighted requests which are normally in the uppercase or comes with IMPORTANT or KEY keywords.
@@ -91,12 +92,14 @@ class SegmentID(BaseModel):
 
 class VideoCustomSegment(BaseModel):
 
-    startTime: int = Field(
+    startTime: str = Field(
         ..., description="The start time of the segment in hh:mm:ss.ms format"
     )
-    endTime: int = Field(
+    endTime: str = Field(
         ..., description="The end time of the segment in hh:mm:ss.ms format"
     )
+    People: str = Field(
+        ..., description="The list of people ids in the segment.")
     SegmentClassification: str = Field(..., description="Classify the segment type. There are 3 possible values: TV Program, Promos, Commercial. DO NOT classify and DO NOT separate a visual overlay or promotional banners as Promos. Only classify segments as Promos if they involve a distinct visual change or interruption that clearly separates them from the ongoing program")
     SegmentClassificationReason: str = Field(..., description="The reason for the classification of the segment")
     Title: str = Field(..., description="Generate the title of the segment using the following instructions: For Commercials: Brand + Product. For Promos: Name of the program being promoted. For Programs: Actual name of the program. Do not use any special characters in the title, except for spaces. For example, 'Colgate MaxFresh' is correct, while 'Colgate MaxFresh!' is incorrect.Try to combine the title of the segments with similar titles or related product. For the unknown title, it might comes from the adjacent segments, so try to combine them.")
@@ -323,7 +326,7 @@ class OpenAIAssistant:
                     model=self.model,
                     messages=messages,
                     response_format=response_format,
-                    reasoning_effort="medium",
+                    reasoning_effort="low",
                     max_completion_tokens=100000
                 )
             else:
@@ -391,19 +394,21 @@ def _get_key_value(obj: dict) -> str:
 
 
 def _get_next_processing_segments(
-    contents: list, start_idx: int, token_size_threshold: int = 100000
+    contents: list, start_idx: int, token_size_threshold: int = 100000, duration_threshold: int = 900000
 ) -> Tuple[int, str]:
     """Get the next set of processing segments
     Args:
         contents (list): The list of segments
         start_idx (int): The start index
+        duration_threshold (int): The duration of the processing segments each time in milliseconds
     Returns:
         Tuple[int, str]: The end index and the segment contents
     """
     end_idx = start_idx
     segment_contents = ""
     numb_tokens = 0
-    while numb_tokens < token_size_threshold and end_idx < len(contents):
+    start_processing_time = contents[end_idx]["startTimeMs"]
+    while end_idx <= len(contents)-1:
         start_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["startTimeMs"]) / 1000)
         end_time = convert_seconds_to_hhmmssms(float(contents[end_idx]["endTimeMs"]) / 1000)
         descriptions = "\n\n\n"
@@ -440,10 +445,35 @@ def _get_next_processing_segments(
             )
         numb_tokens += get_token_count(transcripts)
         segment_contents += descriptions + transcripts
+        if contents[end_idx]["endTimeMs"] - start_processing_time > duration_threshold:
+            # stop processing if the processing over 15 minutes
+            break
         end_idx += 1
+
     return end_idx, segment_contents
 
-
+def _format_segment_time(custom_segments:VideoCustomSegmentList, is_seconds: bool) -> list:
+    """Format the segment time
+    Args:
+        custom_segment_list (VideoCustomSegmentList): The list of customized segments
+    Returns:
+        The list of customized segments with formated time
+    """
+    custom_segment_list = []
+    for idx, segment in enumerate(custom_segments.segments):
+        if isinstance(segment.endTime, int):
+            if is_seconds:
+                # the time is in seconds
+                start_time = convert_seconds_to_hhmmssms(float(segment.startTime))
+                end_time = convert_seconds_to_hhmmssms(float(segment.endTime) )
+            else:
+                # the time is in milliseconds
+                start_time = convert_seconds_to_hhmmssms(float(segment.startTime) / 1000)
+                end_time = convert_seconds_to_hhmmssms(float(segment.endTime) / 1000)
+        segment.startTime = start_time
+        segment.endTime = end_time
+        custom_segment_list.append(segment)
+    return custom_segment_list
 
 def generate_custom_segments(
     video_segment_result: dict, openai_assistant: OpenAIAssistant, segment_definition: str
@@ -460,7 +490,7 @@ def generate_custom_segments(
 
     start_idx = 0
     end_idx = 0
-    final_custom_segment_list = []
+    custom_segment_list = []
     while end_idx < len(contents):
         # Generate the scenes from the pre-processed list
         end_idx, next_segment_content = _get_next_processing_segments(
@@ -470,27 +500,42 @@ def generate_custom_segments(
             grounding_data=next_segment_content,
             segment_definition=segment_definition
         )
-        
+        custom_segment_response = VideoCustomSegmentList(segments=[])
         custom_segment_response = openai_assistant.get_structured_output_answer(
             "", segment_generation_prompt, VideoCustomSegmentList
         )
 
-        is_seconds = True if (isinstance(custom_segment_response.segments[0].endTime, int) and custom_segment_response.segments[0].endTime < 1000) else False
         # post_process the customized segments
-        for idx, segment in enumerate(custom_segment_response.segments):
-            if isinstance(segment.endTime, int):
-                if is_seconds:
-                    # the time is in seconds
-                    start_time = convert_seconds_to_hhmmssms(float(segment.startTime))
-                    end_time = convert_seconds_to_hhmmssms(float(segment.endTime) )
-                else:
-                    # the time is in milliseconds
-                    start_time = convert_seconds_to_hhmmssms(float(segment.startTime) / 1000)
-                    end_time = convert_seconds_to_hhmmssms(float(segment.endTime) / 1000)
-                segment.startTime = start_time
-                segment.endTime = end_time
-            final_custom_segment_list.append(segment)
+        is_seconds = True if (isinstance(custom_segment_response.segments[0].endTime, int) and custom_segment_response.segments[0].endTime < 1000) else False
+        custom_segment_list.extend(_format_segment_time(custom_segment_response, is_seconds))
         start_idx = end_idx
+    
+        # save the customized segments to the file
+        with open(f"custom_segment{start_idx}.txt", "w") as f:
+            for i,segment in enumerate(custom_segment_list):
+                f.write(f"Segment {i}: {segment.model_dump_json(indent=2)} \n ")
+    
+    # 2nd round to merge results from 15 minute chunks
+    grounding_data = ""
+    for idx, segment in enumerate(custom_segment_list):
+        grounding_data += f"Segment {idx}: From {segment.startTime} to {segment.endTime}: \n "
+        grounding_data += f"SegmentClassification: {segment.SegmentClassification}\n"
+        grounding_data += f"SegmentClassificationReason: {segment.SegmentClassificationReason}\n"
+        grounding_data += f"Title: {segment.Title}\n"
+        grounding_data += f"SegmentDescription: {segment.SegmentDescription}\n"
+
+    segment_generation_prompt = Template(CUSTOM_SEGMENT_GENERATION_PROMPT).substitute(
+        grounding_data=grounding_data,
+        segment_definition=segment_definition
+    )
+    
+    custom_segment_response = openai_assistant.get_structured_output_answer(
+        "", segment_generation_prompt, VideoCustomSegmentList
+    )
+    
+    is_seconds = True if (isinstance(custom_segment_response.segments[0].endTime, int) and custom_segment_response.segments[0].endTime < 1000) else False
+
+    final_custom_segment_list = _format_segment_time(custom_segment_response, is_seconds)
 
     return VideoCustomSegmentList(segments=final_custom_segment_list)
 
