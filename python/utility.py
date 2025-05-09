@@ -470,8 +470,8 @@ def _format_segment_time(custom_segments:VideoCustomSegmentList, is_seconds: boo
                 # the time is in milliseconds
                 start_time = convert_seconds_to_hhmmssms(float(segment.startTime) / 1000)
                 end_time = convert_seconds_to_hhmmssms(float(segment.endTime) / 1000)
-        segment.startTime = start_time
-        segment.endTime = end_time
+            segment.startTime = start_time
+            segment.endTime = end_time
         custom_segment_list.append(segment)
     return custom_segment_list
 
