@@ -1,0 +1,215 @@
+{
+  "description": "American Football highlights analyzer – segments video at key narrative plays and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant American football moment that contributes to a compelling highlight reel: Touchdowns, Interceptions, Sacks, Field Goals, Extra Points, Two-Point Conversions, Punt Returns, Kickoff Returns, Fumbles, Big Runs (20+ yards), Long Passes (30+ yards), Third-Down Conversions, Red Zone Plays, Penalties, Coach Challenges, Timeouts, Quarter Breaks, Halftime Show, and other narrative-driven events. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of the segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of the segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "One-sentence summary of the play or event in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Broad context category of this segment.",
+              "enum": [
+                "LiveGameplay",
+                "Replay",
+                "Timeout",
+                "HalfBreak",
+                "HalftimeShow",
+                "Advertisement",
+                "Studio",
+                "Other"
+              ]
+            },
+            "PlayEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary play or event type for this segment.",
+              "enum": [
+                "Touchdown",
+                "Interception",
+                "Sack",
+                "FieldGoal",
+                "ExtraPoint",
+                "TwoPointConversion",
+                "PuntReturn",
+                "KickoffReturn",
+                "Fumble",
+                "LongRun",
+                "DeepPass",
+                "ThirdDownConversion",
+                "RedZonePlay",
+                "Penalty",
+                "Challenge",
+                "Timeout",
+                "Other"
+              ]
+            },
+            "HomeTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the home team from the on-screen graphic."
+            },
+            "AwayTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the away team from the on-screen graphic."
+            },
+            "HomeScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Home team’s score at the start of this segment."
+            },
+            "AwayScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Away team’s score at the start of this segment."
+            },
+            "Quarter": {
+              "type": "string",
+              "method": "classify",
+              "description": "Game quarter or overtime period.",
+              "enum": [
+                "1stQuarter",
+                "2ndQuarter",
+                "3rdQuarter",
+                "4thQuarter",
+                "Overtime",
+                "Unknown"
+              ]
+            },
+            "GameClock": {
+              "type": "string",
+              "method": "generate",
+              "description": "Time remaining in the quarter (MM:SS)."
+            },
+            "Down": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Current down number (1–4)."
+            },
+            "Distance": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Yards to go for a first down."
+            },
+            "YardLine": {
+              "type": "string",
+              "method": "generate",
+              "description": "Field position (e.g., 'NE 35')."
+            },
+            "Possession": {
+              "type": "string",
+              "method": "classify",
+              "description": "Team in possession of the ball.",
+              "enum": ["Home", "Away", "Unknown"]
+            },
+            "ScoringPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who scored (if applicable)."
+            },
+            "AssistPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who assisted (e.g., pass receiver)."
+            },
+            "Interceptor": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who made the interception (if applicable)."
+            },
+            "SackedPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the quarterback who was sacked (if applicable)."
+            },
+            "Returner": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player returning a punt or kickoff."
+            },
+            "PenaltyType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of penalty called (if PlayEvent=Penalty).",
+              "enum": [
+                "Holding",
+                "Offside",
+                "PassInterference",
+                "FalseStart",
+                "RoughingThePasser",
+                "DelayOfGame",
+                "Other"
+              ]
+            },
+            "PenaltyYards": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Number of yards assessed on the penalty."
+            },
+            "CommentaryExcitement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Excitement level of the commentary.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "CrowdNoiseLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated crowd noise level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "InvolvedPlayers": {
+              "type": "string",
+              "method": "generate",
+              "description": "Comma-separated list of key players involved in the play."
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

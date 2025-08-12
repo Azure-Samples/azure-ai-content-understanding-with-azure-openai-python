@@ -1,0 +1,151 @@
+{
+  "description": "Tennis highlights analyzer – segments video at key narrative moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant tennis moment that contributes to a compelling highlight reel: Aces, Winners, Unforced Errors, Double Faults, Break Points, Set Points, Match Points, Tiebreaks, Rally Milestones (10+ shot rallies), Net Approaches, Smashes, Drop Shots, Challenge Reviews, Changeovers, Coach Visits, Crowd Reactions, and other narrative-driven events. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language description of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment.",
+              "enum": [
+                "LiveGameplay",
+                "Replay",
+                "Changeover",
+                "Studio",
+                "Advertisement",
+                "Other"
+              ]
+            },
+            "PlayEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary tennis moment in this segment.",
+              "enum": [
+                "Ace",
+                "Winner",
+                "UnforcedError",
+                "DoubleFault",
+                "BreakPoint",
+                "SetPoint",
+                "MatchPoint",
+                "Tiebreak",
+                "RallyMilestone",
+                "NetApproach",
+                "Smash",
+                "DropShot",
+                "Fault",
+                "FootFault",
+                "ChallengeReview",
+                "CoachVisit",
+                "CrowdReaction",
+                "Other"
+              ]
+            },
+            "HomePlayerName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the first player (usually serving) as shown on-screen."
+            },
+            "AwayPlayerName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the second player as shown on-screen."
+            },
+            "SetNumber": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Current set number (1–5)."
+            },
+            "SetScore": {
+              "type": "string",
+              "method": "generate",
+              "description": "Set score at start of segment (e.g. '6-4, 3-2')."
+            },
+            "GameScore": {
+              "type": "string",
+              "method": "generate",
+              "description": "Game score within current set (e.g. '15-30')."
+            },
+            "ServeNumber": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Which serve of the point (1 or 2)."
+            },
+            "Server": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player serving in this segment."
+            },
+            "Returner": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player receiving serve in this segment."
+            },
+            "CommentaryExcitement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level of the commentary.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "CrowdNoiseLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated crowd noise level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "InvolvedPlayers": {
+              "type": "string",
+              "method": "generate",
+              "description": "Comma-separated list of players prominently involved."
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

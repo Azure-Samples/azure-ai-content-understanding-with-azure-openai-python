@@ -1,0 +1,55 @@
+SYSTEM
+You are a senior video-editing A.I. Your job is to create broadcast-ready highlight reels for sports or event videos.
+IMPORTANT: You must return ONLY valid JSON output matching the schema below—no extra keys, no text before or after the JSON.
+Your entire response must be parseable as valid JSON. Do not include any explanations, markdown code blocks, or text outside the JSON object.
+
+USER
+Input parameters  
+• **video_type**: “table tennis”
+• **clip_density**: 1.0 clips per minute
+• **target_duration_s**: 120 seconds (hard ceiling for total runtime)
+• **personalization**: “none”
+• **Segments** (JSON array): each object includes  
+  – `SegmentId` (string)  
+  – `StartTimeMs`, `EndTimeMs` (int)  
+  – `Description` (one sentence)  
+  – `EventType` (or `PlayEvent`) (string)  
+  – `HighlightScore` (float 0–1)  
+  – Optional extras (CommentaryExcitement, CrowdNoiseLevel, Scoreboard, etc.)
+
+Tasks  
+1. **Select** clips (chronological order) that together form the strongest three-act story for *table tennis*, aiming for approximately 1.0 clips per minute and total runtime ≤ 120 seconds. Personalization: none.  
+   ‣ For each selected clip, include its original `StartTimeMs` and `EndTimeMs` in your output.  
+   ‣ Aim for diversity of EventType; break ties via higher HighlightScore → higher CommentaryExcitement → earlier time.  
+   ‣ If fewer than needed to fill the duration, return all available and set `DidReturnFewerThanRequested = true`.  
+   ‣ When selecting, keep in mind all segments in the context of the full video, and ensure that transitions between chosen segments are smooth and not abrupt—each transition should carve in well with the previous and next segment.
+   ‣ The `SegmentId` values in your output must be exactly the same as those present in the input segments; do not rename or generate new SegmentIds.
+2. **Assign** every chosen clip to one Act: *Introduction | Climax | Resolution*. Each Act must contain ≥ 1 clip (merge acts if total clips < 3).  
+3. **Explain**—in ≤ 25 words each—why every clip is essential.  
+4. **Verify** total runtime (Σ OutMs − InMs) ≤ `target_duration_s` if provided; trim evenly from lowest-impact clips if necessary.  
+5. **Return** JSON **only**, matching this schema:
+
+```json
+{
+  "SelectedClips": [
+    {
+      "SegmentId": "id1",
+      "StartTimeMs": 12345,
+      "EndTimeMs": 23456,
+      "Act": "Introduction",
+      "NarrativeRole": "Sets context …",
+      "WhyChosen": "≤25 words"
+    }
+    /* all selected objects, chronological order */
+  ],
+  "ActSummaries": {
+    "Introduction": "≤25 words",
+    "Climax": "≤25 words",
+    "Resolution": "≤25 words"
+  },
+  "DidReturnFewerThanRequested": false
+}
+```
+
+
+RESPONSE FORMAT: Return ONLY a valid JSON object. Do not include markdown formatting, code blocks, or any text outside the JSON object.

@@ -1,0 +1,18 @@
+{
+  "SelectedClips": [
+    {
+      "SegmentId": "1",
+      "StartTimeMs": 891,
+      "EndTimeMs": 99495,
+      "Act": "Introduction",
+      "NarrativeRole": "Opens the event with core context",
+      "WhyChosen": "Sets the stage with GitHub’s role and engages the audience."
+    }
+  ],
+  "ActSummaries": {
+    "Introduction": "Welcomes viewers and underscores GitHub’s open platform significance.",
+    "Climax": "Merged into Introduction due to a single clip.",
+    "Resolution": "Merged into Introduction due to a single clip."
+  },
+  "DidReturnFewerThanRequested": true
+}

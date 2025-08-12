@@ -1,0 +1,150 @@
+{
+  "description": "Table tennis highlights analyzer \u2013 segments video at key narrative moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant table tennis moment that contributes to a compelling highlight reel: Notable Rallies (long or intense points), Smashes, Serve Aces, Net Balls, Edge Balls, Timeouts, Momentum Shifts, and key points such as Match/Set/Game points. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language description of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment.",
+              "enum": [
+                "LiveGameplay",
+                "Replay",
+                "Stoppage",
+                "Timeout",
+                "Advertisement",
+                "Studio",
+                "Other"
+              ]
+            },
+            "PlayEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary moment in this segment.",
+              "enum": [
+                "Rally",
+                "Smash",
+                "ServeAce",
+                "NetBall",
+                "EdgeBall",
+                "Timeout",
+                "GamePoint",
+                "MatchPoint",
+                "MomentumShift",
+                "None",
+                "Other"
+              ]
+            },
+            "Player1Name": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the first player (or team)."
+            },
+            "Player2Name": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the second player (or team)."
+            },
+            "Player1Score": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Player 1\u2019s score at the start of this segment."
+            },
+            "Player2Score": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Player 2\u2019s score at the start of this segment."
+            },
+            "MatchPhase": {
+              "type": "string",
+              "method": "classify",
+              "description": "Current game or set number shown on the scoreboard.",
+              "enum": [
+                "Game1",
+                "Game2",
+                "Game3",
+                "Game4",
+                "Game5",
+                "Game6",
+                "Game7",
+                "Unknown"
+              ]
+            },
+            "GameClock": {
+              "type": "string",
+              "method": "generate",
+              "description": "Elapsed time or scoreboard time at the start of this segment (MM:SS)."
+            },
+            "ScoringPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who won the point in this segment, if applicable."
+            },
+            "CommentaryExcitement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level of the commentary.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "CrowdNoiseLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated crowd noise level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "InvolvedPlayers": {
+              "type": "string",
+              "method": "generate",
+              "description": "Comma-separated list of players involved in the play or rally."
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

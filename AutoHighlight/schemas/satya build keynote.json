@@ -1,0 +1,121 @@
+{
+  "description": "Satya Build Keynote analyzer \u2013 segments video at key narrative moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant keynote moment that includes product announcements, demos, major reveals, or moments of high audience engagement. Target approximately 2.5 clips per minute and aim for a total highlight reel duration of about 200 seconds. Personalization is not applied. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language description of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment within the keynote.",
+              "enum": [
+                "MainPresentation",
+                "Demo",
+                "QnA",
+                "PanelDiscussion",
+                "Break",
+                "Other"
+              ]
+            },
+            "KeynoteEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary keynote moment in this segment.",
+              "enum": [
+                "ProductAnnouncement",
+                "TechnicalReveal",
+                "VisionStatement",
+                "DemoSegment",
+                "GuestSpeaker",
+                "QnA",
+                "AudienceReaction",
+                "Other"
+              ]
+            },
+            "SpeakerName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the person speaking during this segment."
+            },
+            "SlideTitle": {
+              "type": "string",
+              "method": "generate",
+              "description": "Title or main topic of the slide displayed."
+            },
+            "ProductFocus": {
+              "type": "string",
+              "method": "generate",
+              "description": "Key product(s) or technology highlighted in this segment."
+            },
+            "ExcitementLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level based on speaker enthusiasm and audience reaction.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "AudienceEngagement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated level of audience engagement (e.g., applause, cheering).",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "KeyMessage": {
+              "type": "string",
+              "method": "generate",
+              "description": "Brief summary of the main message or takeaway from this segment."
+            },
+            "CallToAction": {
+              "type": "string",
+              "method": "generate",
+              "description": "Identified call to action made during the segment (if any)."
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

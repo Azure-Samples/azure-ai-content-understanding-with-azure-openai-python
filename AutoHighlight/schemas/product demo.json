@@ -1,0 +1,123 @@
+{
+  "description": "Product demo/announcement highlights analyzer – segments video at key demonstration and announcement moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant product demo or announcement moment that contributes to a compelling highlight reel: New feature introductions, UI walkthroughs, performance benchmarks, pricing reveals, call-to-action prompts, customer testimonials, Q&A segments, setup demos, launch countdowns, sponsor messages, and other narrative-driven events. Each segment should capture one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Segment start time in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Segment end time in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "One-sentence summary of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Broad context of the segment.",
+              "enum": ["LiveDemo","Slide","Testimonial","QnASession","Announcement","Setup","Studio","Other"]
+            },
+            "DemoEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Specific demo/announcement moment.",
+              "enum": ["FeatureHighlight","UIWalkthrough","PerformanceBenchmark","PricingReveal","CallToAction","Testimonial","Question","Answer","InstallationDemo","LaunchCountdown","SponsorMessage","Other"]
+            },
+            "PresenterName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the person presenting."
+            },
+            "CompanyName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the company or brand."
+            },
+            "ProductName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the product shown."
+            },
+            "FeatureName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Specific feature being demonstrated."
+            },
+            "KeyBenefit": {
+              "type": "string",
+              "method": "generate",
+              "description": "Primary benefit communicated."
+            },
+            "DemoInteraction": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of interaction (click, type, scroll).",
+              "enum": ["Click","Type","Scroll","Drag","None","Other"]
+            },
+            "OnScreenText": {
+              "type": "string",
+              "method": "generate",
+              "description": "Any prominent text or label shown (e.g., menu labels)."
+            },
+            "VisualAidType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of visual aid in this segment.",
+              "enum": ["Slide","CodeSnippet","Animation","LiveDemo","Image","None","Other"]
+            },
+            "AudioCue": {
+              "type": "string",
+              "method": "classify",
+              "description": "Prominent audio cue present.",
+              "enum": ["Music","Chime","Applause","Voiceover","Silence","Other"]
+            },
+            "CallToActionText": {
+              "type": "string",
+              "method": "generate",
+              "description": "Exact call-to-action text shown."
+            },
+            "AudienceReaction": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of audience reaction.",
+              "enum": ["Applause","Laughter","Cheer","Silence","Other"]
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI’s highlight-worthiness score (0.0–1.0)."
+            },
+            "ConfidenceScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "Model confidence in extraction (0.0–1.0)."
+            }
+          }
+        }
+      }
+    }
+  }
+}

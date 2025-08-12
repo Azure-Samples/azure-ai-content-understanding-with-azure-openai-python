@@ -1,0 +1,21 @@
+{
+  "video_type": "table tennis",
+  "clip_density": 1.0,
+  "target_duration_s": 120,
+  "personalization": "none",
+  "Segments": [
+    {
+      "SegmentId": "1",
+      "SegmentType": "KeynoteIntro",
+      "Speaker": "Unknown",
+      "AudienceReaction": "Medium",
+      "AnnouncementType": "None",
+      "QandAQuestions": "",
+      "HighlightScore": 0.75,
+      "StartTimeMs": 891,
+      "EndTimeMs": 99495,
+      "Description": "The keynote event begins with a welcome message to Microsoft Build. The stage is set with the Microsoft logo prominently displayed. The speaker walks onto the stage and begins the introduction, mentioning GitHub as part of the discussion. The audience is engaged, capturing the moment with their devices. The speaker continues to discuss GitHub, emphasizing its role as the world's open developer platform. The segment continues with a focus on the open developer platform, and the speaker transitions into discussing a secured and open ecosystem, with visual aids displayed on the screen.",
+      "Topic": "Microsoft Build Keynote Introduction"
+    }
+  ]
+}

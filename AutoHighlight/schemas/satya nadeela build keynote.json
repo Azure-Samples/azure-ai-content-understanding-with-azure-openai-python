@@ -1,0 +1,135 @@
+{
+  "description": "Satya Nadella BUILD Keynote analyzer \u2013 segments video at key narrative moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant keynote moment that contributes to a compelling highlight reel: introductions, product announcements, technical demos, Q&A sections, transitions, jokes/asides, audience engagement or reactions, and closing statements. Each segment should capture exactly one distinct moment. Aim for 3.0 clips per minute, targeting a total highlight reel duration of 100 seconds overall. No personalization is applied."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language description of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment.",
+              "enum": [
+                "OnStagePresentation",
+                "SlideTransition",
+                "LiveDemo",
+                "QandA",
+                "AudienceInteraction",
+                "VideoPlayback",
+                "Other"
+              ]
+            },
+            "KeyMoment": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary moment in this segment.",
+              "enum": [
+                "Introduction",
+                "ProductAnnouncement",
+                "TechnicalDemo",
+                "KeyQuote",
+                "JokeOrAside",
+                "AudienceApplause",
+                "QandAInteraction",
+                "ClosingRemarks",
+                "None",
+                "Other"
+              ]
+            },
+            "SpeakerName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the speaker on stage during this segment."
+            },
+            "SlideTitle": {
+              "type": "string",
+              "method": "generate",
+              "description": "Title or topic of the slide displayed at this moment, if any."
+            },
+            "AudienceReactionIntensity": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated audience reaction level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "SpeakerEnthusiasm": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level of the speaker.",
+              "enum": [
+                "Low",
+                "Moderate",
+                "High",
+                "Very High"
+              ]
+            },
+            "KeyTechnicalTheme": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary technology or product theme of the segment if relevant.",
+              "enum": [
+                "Azure",
+                "AI",
+                "CloudComputing",
+                "DeveloperTools",
+                "Collaboration",
+                "Security",
+                "DataManagement",
+                "Other"
+              ]
+            },
+            "DemoOutcome": {
+              "type": "string",
+              "method": "classify",
+              "description": "Outcome of a live demo, if applicable.",
+              "enum": [
+                "Successful",
+                "PartiallySuccessful",
+                "Failed",
+                "NA"
+              ]
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}
