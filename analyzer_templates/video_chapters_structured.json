@@ -8,7 +8,7 @@
     "disableFaceBlurring": true,
     "disableContentFiltering": true,
     "segmentationMode": "custom",
-    "segmentationDefinition": "Segment the video into only three chapter types: 'Topic Introduction', 'Details About the Work Done', and 'Outcome, Conclusion and Results'. Reason about the content and determine the best time to segment the video according to these chapter types. Use the timestamp of each image to identify the start and end time of each chapter, and avoid chapter overlap.",
+    "segmentationDefinition": "Segment the video into only three chapter types: 'Topic Introduction', 'Details About the Work Done', and 'Outcome, Conclusion and Results'. Reason about the content and determine the best time to segment the video according to these chapter types. Use the timestamp of each image to identify the start and end time of each chapter, and avoid chapter overlap. You must always define the three chapter types, and each chapter must have at least one scene.",
     "locales": [
       "en-US"
     ]
