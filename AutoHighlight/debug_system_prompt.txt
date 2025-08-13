@@ -7,7 +7,7 @@ USER
 Input parameters  
 • **video_type**: “table tennis”
 • **clip_density**: 1.0 clips per minute
-• **target_duration_s**: 120 seconds (hard ceiling for total runtime)
+• **target_duration_s**: 60 seconds (hard ceiling for total runtime)
 • **personalization**: “none”
 • **Segments** (JSON array): each object includes  
   – `SegmentId` (string)  
@@ -18,7 +18,7 @@ Input parameters
   – Optional extras (CommentaryExcitement, CrowdNoiseLevel, Scoreboard, etc.)
 
 Tasks  
-1. **Select** clips (chronological order) that together form the strongest three-act story for *table tennis*, aiming for approximately 1.0 clips per minute and total runtime ≤ 120 seconds. Personalization: none.  
+1. **Select** clips (chronological order) that together form the strongest three-act story for *table tennis*, aiming for approximately 1.0 clips per minute and total runtime ≤ 60 seconds. Personalization: none.  
    ‣ For each selected clip, include its original `StartTimeMs` and `EndTimeMs` in your output.  
    ‣ Aim for diversity of EventType; break ties via higher HighlightScore → higher CommentaryExcitement → earlier time.  
    ‣ If fewer than needed to fill the duration, return all available and set `DidReturnFewerThanRequested = true`.  

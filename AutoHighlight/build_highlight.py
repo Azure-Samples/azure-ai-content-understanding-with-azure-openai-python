@@ -17,11 +17,19 @@ RUNTIME_S = DEFAULT_TARGET_DURATION_S
 PERSONALIZATION = DEFAULT_PERSONALIZATION
 OUT_DIR = "."
 EVENT_FIELD = "EventType"
-ENDPOINT = "https://ruibingptv2.openai.azure.com/"
+
+# Get credentials from environment variables (set by the notebook)
+ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 DEPLOYMENT = "o1"
 API_VERSION = "2024-12-01-preview"
-API_KEY = "50d6d2ec54eb457da8a7bf2c35933ebf"
 TEMPERATURE = 0.4
+
+# Validate that credentials are available
+if not ENDPOINT:
+    raise ValueError("AZURE_OPENAI_ENDPOINT environment variable not set. Please run the API configuration cell in the notebook first.")
+if not API_KEY:
+    raise ValueError("AZURE_OPENAI_API_KEY environment variable not set. Please run the API configuration cell in the notebook first.")
 
 FINAL_SCHEMA = {
     "type": "object",

@@ -98,6 +98,10 @@ def process_json(input_path, output_path=None):
 
 # Run the parser if executed directly
 if __name__ == "__main__":
-    input_path = r"C:\Users\t-kjindel\OneDrive - Microsoft\Desktop\Highlights Generation\analysis_result_videoplayback (3).json"
-    output_path = r"C:\Users\t-kjindel\OneDrive - Microsoft\Desktop\Highlights Generation\prefiltered_segments_NBA_USA_France.json"
-    process_json(input_path, output_path)
+    # Example usage - replace with your actual file paths
+    input_path = r"path/to/your/analysis_result.json"
+    output_path = r"path/to/your/prefiltered_segments.json"
+    
+    print("This script is designed to be called from the highlights notebook.")
+    print("Please run highlights_notebook.ipynb instead.")
+    print(f"Example usage: process_json('{input_path}', '{output_path}')")

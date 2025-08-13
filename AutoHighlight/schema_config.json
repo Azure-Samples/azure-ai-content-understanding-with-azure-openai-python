@@ -1,47 +1,47 @@
 {
   "table tennis": {
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\table tennis.json"
+    "schema_path": "schemas/table tennis.json"
   },
   "volleyball": {
     "clip_density": 4.0,
     "target_duration_s": 100,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\volleyball.json"
+    "schema_path": "schemas/volleyball.json"
   },
   "satya build keynote": {
     "clip_density": 2.5,
     "target_duration_s": 200,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\satya build keynote.json"
+    "schema_path": "schemas/satya build keynote.json"
   },
   "satya nadella build keynote": {
     "clip_density": 3.0,
     "target_duration_s": 100,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\satya nadella build keynote.json"
+    "schema_path": "schemas/satya nadella build keynote.json"
   },
   "satya nadeela build keynote": {
     "clip_density": 3.0,
     "target_duration_s": 100,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\satya nadeela build keynote.json"
+    "schema_path": "schemas/satya nadeela build keynote.json"
   },
   "asha sharma and eric boyd ai conversation": {
     "clip_density": 4.0,
     "target_duration_s": 150,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\asha sharma and eric boyd ai conversation.json"
+    "schema_path": "schemas/asha sharma and eric boyd ai conversation.json"
   },
   "asha sharma and eric boyd talk on AI": {
     "clip_density": 3.0,
     "target_duration_s": 150,
     "personalization": "none",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation\\schemas\\asha sharma and eric boyd talk on AI.json"
+    "schema_path": "schemas/asha sharma and eric boyd talk on AI.json"
   },
   "eric and asha keynote ai event": {
     "clip_density": "medium",
     "target_duration_s": 120,
     "personalization": "exciting moments",
-    "schema_path": "c:\\Users\\t-kjindel\\OneDrive - Microsoft\\Desktop\\Highlights Generation Notebook\\schemas\\eric and asha keynote ai event.json"
+    "schema_path": "schemas/eric and asha keynote ai event.json"
   }
 }

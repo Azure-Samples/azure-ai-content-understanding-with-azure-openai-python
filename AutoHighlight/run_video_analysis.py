@@ -4,19 +4,16 @@ import time
 import requests
 from azure.identity import AzureCliCredential, InteractiveBrowserCredential
 
-# --- 1. CONFIGURATION ---  
-# This section is now pre-filled with the details you provided.
-AZURE_AI_ENDPOINT = "https://ai-aistudiotestcuwestus203841201294.openai.azure.com/" 
+# --- 1. CONFIGURATION ---
+# These values should be set by the calling notebook or script
+# DO NOT hardcode personal information or file paths here
 
-# Define a unique name for our custom analyzer.
-ANALYZER_ID = "soccer-highlights-analyzer531416788"+ str(int(time.time())) 
+def get_azure_ai_endpoint():
+    """Get Azure AI endpoint from environment or return None for user to set"""
+    return os.getenv("AZURE_AI_ENDPOINT", None)
 
-# Using raw strings for Windows paths to avoid issues with backslashes.
-SCHEMA_FILE_PATH = r"C:\Users\t-kjindel\OneDrive - Microsoft\Desktop\Highlights Generation\video_analysis_schema.json"
-VIDEO_FILE_PATH = r"C:\Users\t-kjindel\Downloads\videoplayback (3).mp4"
-
-# The API version for Content Understanding. This should match the documentation.
-API_VERSION = "2025-05-01-preview"
+# Default API version - can be overridden
+DEFAULT_API_VERSION = "2025-05-01-preview"
 
 # --- 2. HELPER FUNCTIONS ---
 
@@ -49,13 +46,16 @@ def get_access_token():
             print(f"Details: {e}")
             return None
 
-def create_or_update_analyzer(schema_path: str, access_token: str):
+def create_or_update_analyzer(azure_ai_endpoint, analyzer_id, schema_path, access_token, api_version=None):
     """
     Creates or updates a custom analyzer in Azure AI Content Understanding.
     This function reads our JSON schema and sends it to Azure to define
     what information we want to extract.
     """
-    print(f"\nAttempting to create/update analyzer '{ANALYZER_ID}'...")
+    if not api_version:
+        api_version = DEFAULT_API_VERSION
+        
+    print(f"\nAttempting to create/update analyzer '{analyzer_id}'...")
 
     try:
         with open(schema_path, 'r', encoding='utf-8') as f:
@@ -67,7 +67,7 @@ def create_or_update_analyzer(schema_path: str, access_token: str):
         print(f"ERROR: Schema file at '{schema_path}' is not valid JSON.")
         return False
 
-    analyzer_url = f"{AZURE_AI_ENDPOINT}/contentunderstanding/analyzers/{ANALYZER_ID}?api-version={API_VERSION}"
+    analyzer_url = f"{azure_ai_endpoint}/contentunderstanding/analyzers/{analyzer_id}?api-version={api_version}"
     
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -79,11 +79,11 @@ def create_or_update_analyzer(schema_path: str, access_token: str):
         
         # A 201 means it was newly created. A 200 means it was updated.
         if response.status_code in [200, 201]:
-            print(f"Successfully created or updated analyzer '{ANALYZER_ID}'.")
+            print(f"Successfully created or updated analyzer '{analyzer_id}'.")
             return True
         # A 409 means the analyzer with this name already exists. This is OK for us.
         elif response.status_code == 409:
-            print(f"Analyzer '{ANALYZER_ID}' already exists. Continuing.")
+            print(f"Analyzer '{analyzer_id}' already exists. Continuing.")
             return True
         else:
             print(f"ERROR: Failed to create/update analyzer. Status Code: {response.status_code}")
@@ -94,18 +94,21 @@ def create_or_update_analyzer(schema_path: str, access_token: str):
         print(f"ERROR: A network error occurred: {e}")
         return False
 
-def analyze_local_video(video_path: str, access_token: str):
+def analyze_local_video(azure_ai_endpoint, analyzer_id, video_path, access_token, api_version=None):
     """
     Uploads a local video file and starts the analysis job.
     Returns the URL to poll for results.
     """
+    if not api_version:
+        api_version = DEFAULT_API_VERSION
+        
     print(f"\nStarting analysis for local video file: '{video_path}'...")
     
     if not os.path.exists(video_path):
         print(f"ERROR: Video file not found at '{video_path}'.")
         return None
 
-    analyze_url = f"{AZURE_AI_ENDPOINT}/contentunderstanding/analyzers/{ANALYZER_ID}:analyze?api-version={API_VERSION}"
+    analyze_url = f"{azure_ai_endpoint}/contentunderstanding/analyzers/{analyzer_id}:analyze?api-version={api_version}"
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -130,7 +133,7 @@ def analyze_local_video(video_path: str, access_token: str):
         print(f"ERROR: A network error occurred: {e}")
         return None
 
-def poll_for_results(result_url: str, access_token: str):
+def poll_for_results(result_url, access_token):
     """
     Continuously checks the result URL until the analysis job is completed.
     Uses a single access token for the duration of the polling.
@@ -165,19 +168,27 @@ def poll_for_results(result_url: str, access_token: str):
             return None
 
 # --- 3. MAIN EXECUTION ---
-def run_analysis(video_path, schema_path, output_dir=None, analyzer_id=None):
+def run_analysis(video_path, schema_path, azure_ai_endpoint=None, output_dir=None, analyzer_id=None, api_version=None):
     """
     Run the full video analysis workflow with specified parameters.
     
     Args:
         video_path: Path to the video file to analyze
         schema_path: Path to the schema file
+        azure_ai_endpoint: Azure AI endpoint URL (if None, will try to get from env)
         output_dir: Directory to save output (defaults to same dir as video)
         analyzer_id: Optional custom analyzer ID
+        api_version: API version to use
     
     Returns:
         Tuple of (success, output_path, error_message)
     """
+    # Validate inputs
+    if not azure_ai_endpoint:
+        azure_ai_endpoint = get_azure_ai_endpoint()
+        if not azure_ai_endpoint:
+            return False, None, "Azure AI endpoint not provided. Please set AZURE_AI_ENDPOINT environment variable or pass as parameter."
+    
     # Set output directory if not provided
     if not output_dir:
         output_dir = os.path.dirname(os.path.abspath(video_path))
@@ -185,6 +196,10 @@ def run_analysis(video_path, schema_path, output_dir=None, analyzer_id=None):
     # Set analyzer ID if not provided
     if not analyzer_id:
         analyzer_id = f"auto-highlight-analyzer-{int(time.time())}"
+        
+    # Set API version if not provided
+    if not api_version:
+        api_version = DEFAULT_API_VERSION
         
     print(f"--- Starting Video Analysis: {os.path.basename(video_path)} ---")
     print(f"Using analyzer ID: {analyzer_id}")
@@ -195,11 +210,11 @@ def run_analysis(video_path, schema_path, output_dir=None, analyzer_id=None):
         return False, None, "Authentication failure"
 
     # Create/update the analyzer with schema
-    if not create_or_update_analyzer(schema_path, access_token):
+    if not create_or_update_analyzer(azure_ai_endpoint, analyzer_id, schema_path, access_token, api_version):
         return False, None, "Analyzer creation failure"
         
     # Start analysis job
-    result_url = analyze_local_video(video_path, access_token)
+    result_url = analyze_local_video(azure_ai_endpoint, analyzer_id, video_path, access_token, api_version)
     if not result_url:
         return False, None, "Analysis job start failure"
     
@@ -219,19 +234,22 @@ def run_analysis(video_path, schema_path, output_dir=None, analyzer_id=None):
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(final_result, f, indent=4)
     
-    print("\n--- Analysis Complete ---")
     print(f"The final structured output has been saved to: {output_path}")
+    print("Video analysis complete. Results saved to:", output_path)
     
     return True, output_path, None
 
 def main():
-    """Main function to orchestrate the video analysis workflow."""
-    print("--- Starting Soccer Highlight Generation Demo (Entra ID Auth) ---")
-    
-    success, output_path, error = run_analysis(VIDEO_FILE_PATH, SCHEMA_FILE_PATH)
-    
-    if not success:
-        print(f"Analysis failed: {error}")
+    """
+    Main function for command-line usage.
+    This is NOT used when called from the notebook.
+    """
+    print("ERROR: This script should be called from the highlight generation notebook.")
+    print("Please run highlights_notebook.ipynb instead.")
+    print("\nIf you want to use this script directly, you need to:")
+    print("1. Set AZURE_AI_ENDPOINT environment variable")
+    print("2. Provide video_path and schema_path as arguments")
+    print("3. Ensure you're authenticated with Azure CLI (az login)")
 
 if __name__ == "__main__":
     main()

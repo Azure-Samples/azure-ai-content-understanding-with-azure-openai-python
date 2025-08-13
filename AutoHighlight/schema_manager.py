@@ -14,8 +14,9 @@ ACTIVE_SCHEMA = BASE_DIR / "video_analysis_schema.json"
 SCHEMAS_DIR   = BASE_DIR / "schemas"
 
 # Azure OpenAI settings (for schema generation)
-ENDPOINT    = "https://ruibingptv2.openai.azure.com/"
-API_KEY     = "50d6d2ec54eb457da8a7bf2c35933ebf"
+# These will be loaded from environment variables set by the notebook
+ENDPOINT    = os.getenv("AZURE_OPENAI_ENDPOINT")
+API_KEY     = os.getenv("AZURE_OPENAI_API_KEY")
 API_VERSION = "2024-12-01-preview"
 DEPLOYMENT  = "o1"
 
