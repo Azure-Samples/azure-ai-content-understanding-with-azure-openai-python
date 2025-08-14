@@ -28,13 +28,14 @@ The pipeline uses the latest Azure AI Content Understanding API (2024-12-01-prev
 
 | File | Description |
 |------|-------------|
-| `highlights_notebook.ipynb` | **Main pipeline** - Complete end-to-end highlight generation workflow |
-| `schema_manager.py` | Manages video analysis schemas and configurations |
-| `build_highlight.py` | OpenAI-powered highlight planning and timestamp selection |
-| `json_parser.py` | Processes and filters Azure Content Understanding output |
-| `video_stitching_ffmpeg.py` | FFmpeg-based video editing and assembly |
+| `HighlightsNotebook.ipynb` | **Main pipeline** - Complete end-to-end highlight generation workflow |
+| `Helper/SchemaManager.py` | Manages video analysis schemas and configurations |
+| `Helper/BuildHighlight.py` | OpenAI-powered highlight planning and timestamp selection |
+| `Helper/JsonParser.py` | Processes and filters Azure Content Understanding output |
+| `Helper/VideoStitchingFfmpeg.py` | FFmpeg-based video editing and assembly |
+| `Helper/` | Python helper modules folder |
 | `schemas/` | Pre-built analysis schemas for different content types |
-| `requirements.txt` | Python package dependencies |
+| `Requirements.txt` | Python package dependencies |
 
 ## 🏁 Getting Started
 

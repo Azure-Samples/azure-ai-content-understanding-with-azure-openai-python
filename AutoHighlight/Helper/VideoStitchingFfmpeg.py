@@ -155,7 +155,7 @@ def stitch_video(video_path, plan_path, output_path, **kwargs):
     
     Args:
         video_path (str): Path to source video file
-        plan_path (str): Path to reasoning JSON (final_highlight_result.json)
+        plan_path (str): Path to reasoning JSON (FinalHighlightResult.json)
         output_path (str): Output filename
         **kwargs: Optional parameters:
             - transition (str): 'cut' or 'fade' (default: 'cut')
@@ -303,7 +303,7 @@ def main():
     
     parser = argparse.ArgumentParser(description="Stitch together highlight clips using FFmpeg.")
     parser.add_argument('--video', required=True, help='Path to source video file')
-    parser.add_argument('--plan', required=True, help='Path to reasoning JSON (final_highlight_result.json)')
+    parser.add_argument('--plan', required=True, help='Path to reasoning JSON (FinalHighlightResult.json)')
     parser.add_argument('--out', default='highlight.mp4', help='Output filename')
     parser.add_argument('--transition', choices=['cut', 'fade'], default='cut')
     parser.add_argument('--speed-ramp', action='store_true', default=False)

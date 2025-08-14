@@ -29,8 +29,8 @@ Thumbs.db
 # Generated files
 highlight.mp4
 *.json
-!schema_config.json
-!video_analysis_schema.json
+!SchemaConfig.json
+!VideoAnalysisSchema.json
 !schemas/*.json
 !requirements.json
 

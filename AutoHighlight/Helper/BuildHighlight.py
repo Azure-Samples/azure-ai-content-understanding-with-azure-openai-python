@@ -2,20 +2,20 @@ import os, sys, json, math, time, pathlib, datetime, textwrap, re
 from typing import List, Dict, Any
 from openai import AzureOpenAI, APIError, RateLimitError
 from jsonschema import validate, ValidationError
-from schema_manager import (
+from .SchemaManager import (
     DEFAULT_VIDEO_TYPE,
     DEFAULT_CLIP_DENSITY,
     DEFAULT_TARGET_DURATION_S,
     DEFAULT_PERSONALIZATION
 )
 
-PROMPT_PATH = "reasoning_prompt.txt"
+PROMPT_PATH = str(pathlib.Path(__file__).parent.parent.resolve() / "ReasoningPrompt.txt")
 SEGMENTS_PATH = "prefiltered_segments_NBA_USA_France.json"
 VIDEO_TYPE = DEFAULT_VIDEO_TYPE
 CLIP_DENSITY = DEFAULT_CLIP_DENSITY
 RUNTIME_S = DEFAULT_TARGET_DURATION_S
 PERSONALIZATION = DEFAULT_PERSONALIZATION
-OUT_DIR = "."
+OUT_DIR = ".."
 EVENT_FIELD = "EventType"
 
 # These will be set by the notebook before calling main()
@@ -181,13 +181,13 @@ def main() -> None:
 
     print("=== USER MESSAGE SENT TO MODEL ===")
     print(user_content)
-    debug_prompt_path = pathlib.Path(OUT_DIR) / "debug_full_prompt.txt"
+    debug_prompt_path = pathlib.Path(__file__).parent.parent / "debug_full_prompt.txt"
     debug_prompt_path.write_text(user_content, encoding="utf-8")
 
     # Debug: print and save the system prompt sent to the model
     print("=== SYSTEM MESSAGE SENT TO MODEL ===")
     print(filled_prompt)
-    debug_system_path = pathlib.Path(OUT_DIR) / "debug_system_prompt.txt"
+    debug_system_path = pathlib.Path(__file__).parent.parent / "DebugSystemPrompt.txt"
     debug_system_path.write_text(filled_prompt, encoding="utf-8")
 
     user = {"role": "user", "content": user_content}
@@ -234,8 +234,8 @@ def main() -> None:
         
     try:
         final_obj = validate_json(final_txt)
-        # Save final output in the same folder as the script
-        out_path = pathlib.Path(__file__).parent / "final_highlight_result.json"
+        # Save final output in the parent folder where the notebook expects it
+        out_path = pathlib.Path(__file__).parent.parent / "FinalHighlightResult.json"
     except Exception as e:
         print(f"ERROR: Failed to process model output: {str(e)}")
         print("Attempting fallback JSON extraction...")
@@ -259,7 +259,7 @@ def main() -> None:
                         "DidReturnFewerThanRequested": False
                     }
                     print("Successfully created fallback JSON structure")
-                    out_path = pathlib.Path(__file__).parent / "final_highlight_result.json"
+                    out_path = pathlib.Path(__file__).parent.parent / "FinalHighlightResult.json"
                 except Exception as json_err:
                     print(f"Fallback extraction failed: {str(json_err)}")
                     sys.exit(1)

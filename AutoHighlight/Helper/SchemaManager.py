@@ -8,9 +8,9 @@ from openai import AzureOpenAI, APIError, RateLimitError
 
 
 # Configuration
-BASE_DIR      = Path(__file__).parent
-CONFIG_PATH   = BASE_DIR / "schema_config.json"
-ACTIVE_SCHEMA = BASE_DIR / "video_analysis_schema.json"
+BASE_DIR      = Path(__file__).parent.parent  # Go up one level from Helper folder
+CONFIG_PATH   = BASE_DIR / "SchemaConfig.json"
+ACTIVE_SCHEMA = BASE_DIR / "VideoAnalysisSchema.json"
 SCHEMAS_DIR   = BASE_DIR / "schemas"
 
 # Azure OpenAI settings (for schema generation)
