@@ -18,6 +18,12 @@ PERSONALIZATION = DEFAULT_PERSONALIZATION
 OUT_DIR = "."
 EVENT_FIELD = "EventType"
 
+# These will be set by the notebook before calling main()
+CONFIG_VIDEO_TYPE = None
+CONFIG_CLIP_DENSITY = None
+CONFIG_TARGET_DURATION_S = None
+CONFIG_PERSONALIZATION = None
+
 # Get credentials from environment variables (set by the notebook)
 ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -132,6 +138,18 @@ def validate_json(txt: str) -> dict:
         raise
 
 def main() -> None:
+    # Use config values if they were set, otherwise fall back to defaults
+    video_type = CONFIG_VIDEO_TYPE if CONFIG_VIDEO_TYPE is not None else VIDEO_TYPE
+    clip_density = CONFIG_CLIP_DENSITY if CONFIG_CLIP_DENSITY is not None else CLIP_DENSITY
+    target_duration_s = CONFIG_TARGET_DURATION_S if CONFIG_TARGET_DURATION_S is not None else RUNTIME_S
+    personalization = CONFIG_PERSONALIZATION if CONFIG_PERSONALIZATION is not None else PERSONALIZATION
+    
+    print(f"Using configuration:")
+    print(f"  Video Type: {video_type}")
+    print(f"  Clip Density: {clip_density}")
+    print(f"  Target Duration: {target_duration_s}s")
+    print(f"  Personalization: {personalization}")
+    
     prompt_tpl = pathlib.Path(PROMPT_PATH).read_text(encoding="utf-8")
     segments   = json.loads(pathlib.Path(SEGMENTS_PATH).read_text(encoding="utf-8"))
     client = AzureOpenAI(
@@ -142,10 +160,10 @@ def main() -> None:
     # System message: full instructions and schema
     filled_prompt = (
         prompt_tpl
-        .replace("{{video_type}}", VIDEO_TYPE)
-        .replace("{{clip_density}}", str(CLIP_DENSITY))
-        .replace("{{target_duration_s}}", str(RUNTIME_S))
-        .replace("{{personalization}}", str(PERSONALIZATION))
+        .replace("{{video_type}}", video_type)
+        .replace("{{clip_density}}", str(clip_density))
+        .replace("{{target_duration_s}}", str(target_duration_s))
+        .replace("{{personalization}}", str(personalization))
     )
     # Add an explicit JSON format instruction to the system message
     filled_prompt += "\n\nRESPONSE FORMAT: Return ONLY a valid JSON object. Do not include markdown formatting, code blocks, or any text outside the JSON object."
@@ -153,10 +171,10 @@ def main() -> None:
 
     # User message: just the input JSON
     input_json = {
-        "video_type": VIDEO_TYPE,
-        "clip_density": CLIP_DENSITY,
-        "target_duration_s": RUNTIME_S,
-        "personalization": PERSONALIZATION,
+        "video_type": video_type,
+        "clip_density": clip_density,
+        "target_duration_s": target_duration_s,
+        "personalization": personalization,
         "Segments": segments
     }
     user_content = json.dumps(input_json, indent=2)
@@ -181,7 +199,7 @@ def main() -> None:
     3. Unique SegmentIds?
     4. Each act present?
     5. ≥2 distinct {EVENT_FIELD} values unless fewer exist.
-    6. Runtime ≤ {RUNTIME_S}s if provided.
+    6. Runtime ≤ {target_duration_s}s if provided.
     Reply PASS or JSON {{"Issues":[],"FixTips":""}}
     Draft:
     ```json
