@@ -1,10 +1,9 @@
 {
-  "description": "test model",
+  "description": "Dynamic Chaptering",
   "scenario": "videoShot",
   "config": {
     "returnDetails": true,
     "enableSegmentation": true,
-    "disableContentFiltering": true,
     "segmentationMode": "custom",
     "segmentationDefinition": "Segment the video into stories or chapters. A story (chapter) in a video is a self-contained portion of the program dedicated to a specific news story, topic, or theme. Each segment typically includes a distinct introduction, development, and (sometimes) a conclusion, and can feature a combination of elements such as reporter narration, interviews, sound bites, relevant footage (B-roll), and graphics.",
     "locales": [
@@ -13,8 +12,7 @@
   },
   "BaseAnalyzerId": "prebuilt-videoAnalyzer",
   "fieldSchema": {
-    "name": "Content Understanding",
-    "description": "NO USE",
+    "name": "Content Understanding - Dynamic Chaptering",
     "fields": {
       "Segments": {
         "type": "array",
@@ -35,7 +33,7 @@
                   "Description": {
                     "type": "string",
                     "method": "generate",
-                    "description": "A 5 word description of the scene. A scene is a smaller segment of the segment where a continous block for storytelling unfolds within a specific time, place, and set of characters. A scene can only belong to a single chapter, and cannot overlap with other scenes. Scenes are sequential across the video."
+                    "description": "A five-word description of the scene. A scene is a smaller segment of the segment where a continous block for storytelling unfolds within a specific time, place, and set of characters. A scene can only belong to a single chapter, and cannot overlap with other scenes. Scenes are sequential across the video."
                   },
                   "StartTimestamp": {
                     "type": "string",
