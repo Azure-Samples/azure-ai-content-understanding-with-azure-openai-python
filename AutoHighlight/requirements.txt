@@ -21,7 +21,6 @@ numpy>=1.23.5
 scipy>=1.10
 
 # Audio processing (optional for advanced features)
-librosa==0.10.1.post2
 soundfile>=0.12.1
 numba<0.60
 

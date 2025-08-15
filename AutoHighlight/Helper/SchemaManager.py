@@ -21,7 +21,7 @@ API_VERSION = "2024-12-01-preview"
 DEPLOYMENT  = "o1"
 
 # Placeholders
-DEFAULT_VIDEO_TYPE = "table tennis"
+DEFAULT_VIDEO_TYPE = "soccer"
 DEFAULT_CLIP_DENSITY = 1.0  # clips per minute
 DEFAULT_PERSONALIZATION = "none"  
 DEFAULT_TARGET_DURATION_S = 300  # seconds

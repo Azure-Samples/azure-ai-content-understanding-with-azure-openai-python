@@ -2,19 +2,19 @@
 
 Welcome! AutoHighlight is an innovative AI-powered pipeline that automatically generates compelling video highlights from any video content. By combining **Azure Content Understanding** with **OpenAI's advanced reasoning capabilities**, it intelligently identifies the most engaging moments and creates professional highlight reels tailored to your specific needs.
 
-## 🎯 What AutoHighlight Does
+## What AutoHighlight Does
 
 Transform hours of video content into captivating highlights in minutes:
 
-- **🎬 Smart Content Analysis**: Uses Azure Content Understanding to analyze every frame and identify key moments
-- **🧠 AI-Powered Selection**: Leverages OpenAI o1's reasoning to select the most compelling clips based on your preferences  
-- **🎨 Automated Editing**: Creates seamless highlight videos with professional transitions and timing
-- **🎯 Personalized Results**: Tailors highlights to specific content types (sports, presentations, events) and your custom preferences
-- **⚡ Production Ready**: Robust pipeline suitable for content creators, marketers, educators, and media professionals
+- **Smart Content Analysis**: Uses Azure Content Understanding to analyze every frame and identify key moments
+- **AI-Powered Selection**: Leverages OpenAI o1's reasoning to select the most compelling clips based on your preferences  
+- **Automated Editing**: Creates seamless highlight videos with professional transitions and timing
+- **Personalized Results**: Tailors highlights to specific content types (sports, presentations, events) and your custom preferences
+- **Production Ready**: Robust pipeline suitable for content creators, marketers, educators, and media professionals
 
 Perfect for creating highlight reels from sports events, keynote presentations, product demos, educational content, entertainment shows, and more!
 
-## 🚀 Key Features
+## Key Features
 
 - **Multi-Domain Support**: Pre-configured schemas for sports (soccer, basketball, football), presentations, events, and custom content types
 - **Intelligent Timestamp Selection**: AI reasoning identifies the most impactful moments based on content analysis
@@ -24,7 +24,7 @@ Perfect for creating highlight reels from sports events, keynote presentations, 
 
 The pipeline uses the latest Azure AI Content Understanding API (2024-12-01-preview) combined with OpenAI's most advanced reasoning models.
 
-## 📁 Repository Structure
+## Repository Structure
 
 | File | Description |
 |------|-------------|
@@ -37,7 +37,7 @@ The pipeline uses the latest Azure AI Content Understanding API (2024-12-01-prev
 | `schemas/` | Pre-built analysis schemas for different content types |
 | `Requirements.txt` | Python package dependencies |
 
-## 🏁 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -49,7 +49,7 @@ Make sure you have the following:
 - **Azure OpenAI** resource with GPT-4o or newer model deployed
 
 
-## ⚙️ Azure Resource Configuration
+## Azure Resource Configuration
 
 ### Option 1: Automated Setup (Recommended)
 
@@ -79,7 +79,7 @@ azd up
    - Open `highlights_notebook.ipynb`
    - Update the API Configuration cell with your endpoints and API keys
 
-## 🎬 Usage
+## Usage
 
 1. **Open the main notebook**:
    ```bash
@@ -103,7 +103,7 @@ azd up
    - Professional highlight video saved as `highlight.mp4`
    - Detailed analysis and planning data for review
 
-## 🎯 Supported Content Types
+## Supported Content Types
 
 | Schema Type | Best For | Key Features Detected |
 |-------------|----------|----------------------|
@@ -114,7 +114,7 @@ azd up
 | **education** | Lectures, tutorials | Important concepts, demonstrations |
 | **custom** | Any content type | Configurable based on your needs |
 
-## 🔧 Customization
+## Customization
 
 ### Adding New Content Types
 
@@ -130,7 +130,7 @@ azd up
 - **Transitions**: Choose between cuts, fades, or custom effects
 - **Resolution**: Output in 720p, 1080p, or custom resolutions
 
-## 🏗️ Pipeline Architecture
+## Pipeline Architecture
 
 ```
 1. Schema Generation → 2. Video Analysis → 3. Content Filtering → 4. AI Selection → 5. Video Assembly
@@ -143,14 +143,14 @@ azd up
 4. **AI Selection**: OpenAI o1 intelligently selects and arranges final clips
 5. **Video Assembly**: FFmpeg stitches clips into professional highlight reel
 
-## 📊 Sample Results
+## Sample Results
 
 **Input**: 45-minute soccer match  
 **Output**: 2-minute highlight reel with 8 key moments  
 **Processing Time**: ~12 minutes  
 **Quality**: Professional-grade with smooth transitions  
 
-## 🛠️ Technical Details
+## Technical Details
 
 The highlight generation pipeline consists of **5 modular stages**:
 
@@ -162,7 +162,7 @@ The highlight generation pipeline consists of **5 modular stages**:
 | **4. AI Reasoning** | OpenAI o1 selects optimal timestamps and narrative flow | Filtered segments | Highlight plan |
 | **5. Video Assembly** | FFmpeg stitches clips with transitions and effects | Highlight plan, source video | Final highlight MP4 |
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 **Common Issues**:
 - **FFmpeg not found**: Install FFmpeg and ensure it's in your PATH
@@ -177,7 +177,7 @@ pip install --upgrade pip
 pip install -r requirements.txt --force-reinstall
 ```
 
-## ⚖️ Legal Notices
+## Legal Notices
 
 **Trademarks** - This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos is subject to those third-party's policies.
 
