@@ -1,18 +1,18 @@
 {
-  "description": "Structured Chaptering",
+  "description": "Dynamic Chaptering",
   "scenario": "videoShot",
   "config": {
     "returnDetails": true,
     "enableSegmentation": true,
     "segmentationMode": "custom",
-    "segmentationDefinition": "Segment the video into only three chapter types: 'Topic Introduction', 'Details About the Work Done', and 'Outcome, Conclusion and Results'. Reason about the content and determine the best time to segment the video according to these chapter types. Use the timestamp of each image to identify the start and end time of each chapter, and avoid chapter overlap. You must always define the three chapter types, and each chapter must have at least one scene.",
+    "segmentationDefinition": "Segment the video into stories or chapters. A story (chapter) in a video is a self-contained portion of the program dedicated to a specific news story, topic, or theme. Each segment typically includes a distinct introduction, development, and (sometimes) a conclusion, and can feature a combination of elements such as reporter narration, interviews, sound bites, relevant footage (B-roll), and graphics.",
     "locales": [
       "en-US"
     ]
   },
   "BaseAnalyzerId": "prebuilt-videoAnalyzer",
   "fieldSchema": {
-    "name": "Content Understanding - Structured Chaptering",
+    "name": "Content Understanding - Dynamic Chaptering",
     "fields": {
       "Segments": {
         "type": "array",
@@ -23,7 +23,7 @@
             "SegmentType": {
               "type": "string",
               "method": "generate",
-              "description": "The chapter type for the segment"
+              "description": "The short title or a short summary of the story or chapter."
             },
             "Scenes": {
               "type": "array",
