@@ -27,9 +27,9 @@ CONFIG_PERSONALIZATION = None
 # Get credentials from environment variables (set by the notebook)
 ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-DEPLOYMENT = "o1"
-API_VERSION = "2024-12-01-preview"
-TEMPERATURE = 0.4
+DEPLOYMENT = "o3"
+API_VERSION = "2024-12-01-preview"  # Updated for o3 compatibility
+TEMPERATURE = 0.4  # Will be ignored for o3
 
 # Validate that credentials are available
 if not ENDPOINT:
@@ -71,12 +71,12 @@ def safe_chat(client: AzureOpenAI, messages, deployment, temperature=None):
             params = {
                 "model": deployment,
                 "messages": messages,
-                "max_completion_tokens": 32000,
+                "max_completion_tokens": 50000,  # Increased for o3
                 "response_format": {"type": "json_object"}  # Request JSON format explicitly
             }
             
-            # Only add temperature if it's provided (avoid for o1 model)
-            if temperature is not None and deployment != "o1":
+            # Only add temperature if it's provided (avoid for o3 model as it doesn't support temperature)
+            if temperature is not None and deployment != "o3":
                 params["temperature"] = temperature
                 
             rsp = client.chat.completions.create(**params)
