@@ -11,7 +11,7 @@ Welcome! Content Understanding is an innovative solution designed to analyze and
 | File | Description |
 | --- | --- |
 | [video_chapter_generation.ipynb](notebooks/video_chapter_generation.ipynb) | Extract semantic descriptions using content understanding API, and then leverage OpenAI to group into video chapters. |
-| [HighlightsNotebook.ipynb](AutoHighlight/HighlightsNotebook.ipynb) | Generate intelligent video highlights using Azure AI Content Understanding and OpenAI reasoning to create broadcast-ready highlight reels. [📖 Full Documentation](AutoHighlight/README.md) |
+| [HighlightsNotebook.ipynb](AutoHighlight/HighlightsNotebook.ipynb) | Generate intelligent video highlights using Azure AI Content Understanding and OpenAI reasoning to create broadcast-ready highlight reels. [Full Documentation](AutoHighlight/README.md) |
 
 
 ## Getting started
