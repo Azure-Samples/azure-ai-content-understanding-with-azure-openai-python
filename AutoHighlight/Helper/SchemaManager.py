@@ -18,7 +18,7 @@ SCHEMAS_DIR   = BASE_DIR / "schemas"
 ENDPOINT    = os.getenv("AZURE_OPENAI_ENDPOINT")
 API_KEY     = os.getenv("AZURE_OPENAI_API_KEY")
 API_VERSION = "2024-12-01-preview"
-DEPLOYMENT  = "o1"
+DEPLOYMENT  = "o3"
 
 # Placeholders
 DEFAULT_VIDEO_TYPE = "soccer"
@@ -35,7 +35,7 @@ client = AzureOpenAI(
     api_version=API_VERSION
 )
 
-def safe_chat(messages, max_tokens=4096):
+def safe_chat(messages, max_tokens=8192):  # Increased for o3 compatibility
     backoff = 2
     for attempt in range(3):
         try:
