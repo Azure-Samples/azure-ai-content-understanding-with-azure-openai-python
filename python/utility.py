@@ -1,4 +1,4 @@
-from typing import Any, Union, Tuple
+from typing import Any, List, Optional, Tuple, Union
 import json
 import re
 from string import Template
@@ -36,6 +36,8 @@ DEDUP_PROMPT = """
 
     ${tag_list}
     """
+
+HIGHLIGHT_PLAN_PROMPT_PATH = "/workspaces/azure-ai-content-understanding-with-azure-openai-python/python/reasoning_prompt.txt"
 
 
 class VideoTagResponse(BaseModel):
@@ -259,15 +261,23 @@ class OpenAIAssistant:
                 messages.append({"role": "system", "content": system_prompt})
             if user_prompt:
                 messages.append({"role": "user", "content": user_prompt})
-
-            completion = self.client.beta.chat.completions.parse(
-                model=self.model,
-                messages=messages,
-                response_format=response_format,
-                max_tokens=4096,
-                seed=seed,
-                temperature=temperature,
-            )
+            if "o3" in self.model:  # TODO: expand the list of models
+                completion = self.client.chat.completions.parse(
+                    model=self.model,
+                    messages=messages,
+                    response_format=response_format,
+                    max_completion_tokens=50000,
+                    seed=seed,
+                )
+            else:
+                completion = self.client.beta.chat.completions.parse(
+                    model=self.model,
+                    messages=messages,
+                    response_format=response_format,
+                    max_tokens=4096,
+                    seed=seed,
+                    temperature=temperature,
+                )
             response = completion.choices[0].message.parsed
             return response
         except Exception as ex:
@@ -439,6 +449,7 @@ def generate_chapters(
     )
     return chapter_response
 
+
 def aggregate_tags(
         video_segment_result: dict, openai_assistant: OpenAIAssistant
 ) -> VideoTagResponse:
@@ -466,3 +477,80 @@ def aggregate_tags(
     )
 
     return tag_response
+
+
+class ActSummary(BaseModel):
+    ActName: str
+    Summary: str
+
+
+class HighlightClip(BaseModel):
+    SegmentId: str
+    StartTimeMs: int
+    EndTimeMs: int
+    Act: str
+    NarrativeRole: str
+    WhyChosen: str
+
+
+class HighlightPlan(BaseModel):
+    SelectedClips: List[HighlightClip]
+    ActSummaries: List[ActSummary]
+    DidReturnFewerThanRequested: bool
+
+
+def get_highlight_plan(
+    openai_assistant: OpenAIAssistant,
+    segments: list,
+    video_type: str,
+    clip_density: float,
+    target_duration_s: int,
+    personalization: str,
+) -> Optional[HighlightPlan]:
+    """
+    Generate a highlight plan using OpenAI structured output.
+
+    Args:
+        openai_assistant (OpenAIAssistant): The OpenAI assistant client.
+        segments (list): The list of segment dicts.
+        video_type (str): The type of video.
+        clip_density (float): The clip density.
+        target_duration_s (int): The target duration in seconds.
+        personalization (str): Personalization string.
+
+    Returns:
+        HighlightPlan: The structured highlight plan, or None if failed.
+    """
+    # Read the prompt template from the fixed path
+    with open(HIGHLIGHT_PLAN_PROMPT_PATH, "r", encoding="utf-8") as f:
+        prompt_template = f.read()
+
+    filled_prompt = (
+        prompt_template
+        .replace("{{video_type}}", video_type)
+        .replace("{{clip_density}}", str(clip_density))
+        .replace("{{target_duration_s}}", str(target_duration_s))
+        .replace("{{personalization}}", str(personalization))
+    )
+    
+    # Prepare user message
+    user_input = {
+        "video_type": video_type,
+        "clip_density": clip_density,
+        "target_duration_s": target_duration_s,
+        "personalization": personalization,
+        "Segments": segments
+    }
+    user_message = json.dumps(user_input, indent=2)
+
+    try:
+        result = openai_assistant.get_structured_output_answer(
+            system_prompt=filled_prompt,
+            user_prompt=user_message,
+            response_format=HighlightPlan,
+            temperature=0.0,
+        )
+        return result
+    except Exception as e:
+        print(f"Failed to get highlight plan: {e}")
+        return None
