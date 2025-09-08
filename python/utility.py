@@ -147,6 +147,46 @@ class VideoChapterResponse(BaseModel):
     )
 
 
+class ActSummary(BaseModel):
+    """Summary for each act in the highlight plan.
+    Attributes:
+        ActName (str): The name of the act (e.g., Introduction, Climax, Resolution)
+        Summary (str): The summary text for the act
+    """
+    ActName: str
+    Summary: str
+
+
+class HighlightClip(BaseModel):
+    """A single highlight clip in the highlight plan.
+    Attributes:
+        SegmentId (str): The segment identifier
+        StartTimeMs (int): The start time in milliseconds
+        EndTimeMs (int): The end time in milliseconds
+        Act (str): The act this clip belongs to
+        NarrativeRole (str): The narrative role of the clip
+        WhyChosen (str): Reason for selection
+    """
+    SegmentId: str
+    StartTimeMs: int
+    EndTimeMs: int
+    Act: str
+    NarrativeRole: str
+    WhyChosen: str
+
+
+class HighlightPlan(BaseModel):
+    """The highlight plan output structure.
+    Attributes:
+        SelectedClips (List[HighlightClip]): List of selected highlight clips
+        ActSummaries (List[ActSummary]): List of act summaries
+        DidReturnFewerThanRequested (bool): Whether fewer clips than requested were returned
+    """
+    SelectedClips: List[HighlightClip]
+    ActSummaries: List[ActSummary]
+    DidReturnFewerThanRequested: bool
+
+
 class OpenAIAssistant:
     """Azure OpenAI Assistant client"""
 
@@ -477,26 +517,6 @@ def aggregate_tags(
     )
 
     return tag_response
-
-
-class ActSummary(BaseModel):
-    ActName: str
-    Summary: str
-
-
-class HighlightClip(BaseModel):
-    SegmentId: str
-    StartTimeMs: int
-    EndTimeMs: int
-    Act: str
-    NarrativeRole: str
-    WhyChosen: str
-
-
-class HighlightPlan(BaseModel):
-    SelectedClips: List[HighlightClip]
-    ActSummaries: List[ActSummary]
-    DidReturnFewerThanRequested: bool
 
 
 def get_highlight_plan(

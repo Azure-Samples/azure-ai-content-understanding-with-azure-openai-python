@@ -3,13 +3,23 @@ import pathlib
 import logging
 import tempfile
 import shutil
-from moviepy import VideoFileClip, concatenate_videoclips  # TODO: add moviepy to requirements.txt
+from typing import Any, Dict, List, Optional, Union
+from moviepy import VideoFileClip, concatenate_videoclips
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
 from moviepy import vfx
 
-def get_video_info(video_path):
-    """Get video duration and basic info using ffprobe"""
+
+def get_video_info(video_path: Union[str, pathlib.Path]) -> Dict[str, Any]:
+    """
+    Get video duration and basic info using ffprobe.
+
+    Args:
+        video_path (str or pathlib.Path): Path to the video file.
+
+    Returns:
+        dict: Dictionary containing duration, fps, width, height, and has_audio.
+    """
     try:
         clip = VideoFileClip(str(video_path))
         duration = clip.duration
@@ -31,7 +41,26 @@ def get_video_info(video_path):
 
 
 
-def extract_clip(video_path, start_time, end_time, output_path, speed_factor=1.0):
+def extract_clip(
+    video_path: Union[str, pathlib.Path],
+    start_time: float,
+    end_time: float,
+    output_path: Union[str, pathlib.Path],
+    speed_factor: float = 1.0
+) -> bool:
+    """
+    Extract a clip from a video file, optionally changing its speed.
+
+    Args:
+        video_path (str or pathlib.Path): Path to the source video.
+        start_time (float): Start time in seconds.
+        end_time (float): End time in seconds.
+        output_path (str or pathlib.Path): Path to save the extracted clip.
+        speed_factor (float, optional): Speed multiplier for the clip. Defaults to 1.0.
+
+    Returns:
+        bool: True if extraction succeeded, False otherwise.
+    """
     try:
         clip = VideoFileClip(str(video_path))
 
@@ -59,8 +88,25 @@ def extract_clip(video_path, start_time, end_time, output_path, speed_factor=1.0
         logging.error(f"Error extracting clip {start_time}-{end_time}: {e}")
         return False
 
-def add_fade_effects(video_path, output_path, fadein_duration=0.5, fadeout_duration=0.5):
-    """Add fade in/out effects to a video"""
+
+def add_fade_effects(
+    video_path: Union[str, pathlib.Path],
+    output_path: Union[str, pathlib.Path],
+    fadein_duration: float = 0.5,
+    fadeout_duration: float = 0.5
+) -> bool:
+    """
+    Add fade in/out effects to a video.
+
+    Args:
+        video_path (str or pathlib.Path): Path to the source video.
+        output_path (str or pathlib.Path): Path to save the output video.
+        fadein_duration (float, optional): Duration of fade-in in seconds. Defaults to 0.5.
+        fadeout_duration (float, optional): Duration of fade-out in seconds. Defaults to 0.5.
+
+    Returns:
+        bool: True if fade effects were applied successfully, False otherwise.
+    """
     try:
         clip = VideoFileClip(str(video_path))
 
@@ -89,9 +135,20 @@ def add_fade_effects(video_path, output_path, fadein_duration=0.5, fadeout_durat
         logging.error(f"Error adding fade effects: {e}")
         return False
 
-def concatenate_videos(video_paths, output_path):
+
+def concatenate_videos(
+    video_paths: List[Union[str, pathlib.Path]],
+    output_path: Union[str, pathlib.Path]
+) -> bool:
     """
     Concatenate multiple videos using MoviePy v2.x (pure Python).
+
+    Args:
+        video_paths (list): List of paths to video files to concatenate.
+        output_path (str or pathlib.Path): Path to save the concatenated video.
+
+    Returns:
+        bool: True if concatenation succeeded, False otherwise.
     """
     try:
         clips = [VideoFileClip(str(path)) for path in video_paths]
@@ -120,9 +177,22 @@ def concatenate_videos(video_paths, output_path):
         logging.error(f"Error concatenating videos: {e}")
         return False
 
-def resize_video(video_path, output_path, height=720):
+
+def resize_video(
+    video_path: Union[str, pathlib.Path],
+    output_path: Union[str, pathlib.Path],
+    height: int = 720
+) -> bool:
     """
     Resize a video to the specified height while maintaining aspect ratio (MoviePy v2.x).
+
+    Args:
+        video_path (str or pathlib.Path): Path to the source video.
+        output_path (str or pathlib.Path): Path to save the resized video.
+        height (int, optional): Desired output height in pixels. Defaults to 720.
+
+    Returns:
+        bool: True if resizing succeeded, False otherwise.
     """
     try:
         clip = VideoFileClip(str(video_path))
@@ -148,20 +218,29 @@ def resize_video(video_path, output_path, height=720):
         logging.error(f"Error resizing video: {e}")
         return False
 
-def stitch_video(video_path, plan_path, output_path, **kwargs):
+
+def stitch_video(
+    video_path: Union[str, pathlib.Path],
+    plan_path: Union[str, pathlib.Path],
+    output_path: Union[str, pathlib.Path],
+    **kwargs
+) -> Optional[Union[str, pathlib.Path]]:
     """
     Stitch together highlight clips using MoviePy.
-    
+
     Args:
-        video_path (str): Path to source video file
-        plan_path (str): Path to reasoning JSON (FinalHighlightResult.json)
-        output_path (str): Output filename
+        video_path (str or pathlib.Path): Path to source video file.
+        plan_path (str or pathlib.Path): Path to reasoning JSON (FinalHighlightResult.json).
+        output_path (str or pathlib.Path): Output filename.
         **kwargs: Optional parameters:
             - transition (str): 'cut' or 'fade' (default: 'cut')
             - speed_ramp (bool): Add speed ramp effect (default: False)
             - min_clip_s (float): Minimum clip duration in seconds (default: 0.5)
             - resolution (int): Output height in pixels (default: 720)
             - dry_run (bool): Just print clips without processing (default: False)
+
+    Returns:
+        str or pathlib.Path or None: Path to the output video, or None on failure.
     """
     # Set defaults for optional parameters
     transition = kwargs.get('transition', 'cut')
@@ -295,33 +374,3 @@ def stitch_video(video_path, plan_path, output_path, **kwargs):
     
     logging.info(f"Highlight video saved to {output_path}")
     return output_path
-
-def main():
-    """Command-line interface for backward compatibility"""
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Stitch together highlight clips using MoviePy.")
-    parser.add_argument('--video', required=True, help='Path to source video file')
-    parser.add_argument('--plan', required=True, help='Path to reasoning JSON (FinalHighlightResult.json)')
-    parser.add_argument('--out', default='highlight.mp4', help='Output filename')
-    parser.add_argument('--transition', choices=['cut', 'fade'], default='cut')
-    parser.add_argument('--speed-ramp', action='store_true', default=False)
-    parser.add_argument('--min-clip-s', type=float, default=0.5)
-    parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--resolution', type=int, choices=[720, 1080], default=720)
-    
-    args = parser.parse_args()
-    
-    return stitch_video(
-        video_path=args.video,
-        plan_path=args.plan,
-        output_path=args.out,
-        transition=args.transition,
-        speed_ramp=args.speed_ramp,
-        min_clip_s=args.min_clip_s,
-        dry_run=args.dry_run,
-        resolution=args.resolution
-    )
-
-if __name__ == '__main__':
-    main()
