@@ -147,6 +147,48 @@ class VideoChapterResponse(BaseModel):
     )
 
 
+class MMIField(BaseModel):
+    type: str
+    method: str
+    description: str
+    enum: Optional[List[str]] = None
+
+
+class KeyValueField(BaseModel):
+    key: str
+    value: MMIField
+
+class ObjectField(BaseModel):
+    type: str
+    properties: List[KeyValueField]  # OpenAI structured output doesn't support Dict
+
+class SegmentField(BaseModel):
+    type: str
+    method: str
+    items: ObjectField
+
+
+class SegmentFields(BaseModel):
+    Segments: SegmentField
+
+
+class SegmentFieldSchema(BaseModel):
+    fields: SegmentFields
+
+
+class SegementConfig(BaseModel):
+    returnDetails: bool
+    segmentationMode: str
+    segmentationDefinition: Optional[str] = None
+
+
+class SegmentAnalyzer(BaseModel):
+    description: str
+    baseAnalyzerId: str
+    config: SegementConfig
+    fieldSchema: SegmentFieldSchema
+
+
 class ActSummary(BaseModel):
     """Summary for each act in the highlight plan.
     Attributes:
@@ -574,3 +616,114 @@ def get_highlight_plan(
     except Exception as e:
         print(f"Failed to get highlight plan: {e}")
         return None
+
+
+def convert_properties_dict_to_list(data: Any) -> Any:
+    """
+    Recursively converts all 'properties' dicts in a JSON schema
+    to lists of {key, value} objects to match SegmentAnalyzer's KeyValueField model.
+    """
+    if isinstance(data, dict):
+        new_data = {}
+        for k, v in data.items():
+            if k == "properties" and isinstance(v, dict):
+                # convert dict -> list of {key, value}
+                new_data[k] = [{"key": key, "value": value} for key, value in v.items()]
+            else:
+                new_data[k] = convert_properties_dict_to_list(v)
+        return new_data
+    elif isinstance(data, list):
+        return [convert_properties_dict_to_list(item) for item in data]
+    else:
+        return data
+    
+
+def convert_properties_list_to_dict(data: dict) -> dict:
+    if isinstance(data, dict):
+        new_data = {}
+        for k, v in data.items():
+            if k == "properties" and isinstance(v, list):
+                # convert list of {key, value} -> dict
+                new_data[k] = {item["key"]: item["value"] for item in v}
+            else:
+                new_data[k] = convert_properties_list_to_dict(v)
+        return new_data
+    elif isinstance(data, list):
+        return [convert_properties_list_to_dict(item) for item in data]
+    else:
+        return data
+
+
+def get_converted_properties_list_schema_str(schema: dict) -> str:
+    converted_schema = convert_properties_dict_to_list(schema)
+    return json.dumps(converted_schema, indent=2)
+
+def get_converted_properties_dict_schema_dict(result: SegmentAnalyzer) -> dict:
+    result_dict = result.model_dump()
+    return convert_properties_list_to_dict(result_dict)
+
+def generate_schema_llm(
+    openai_assistant: OpenAIAssistant,
+    video_type: str,
+    example_path: str,
+    clip_density: float = 1.0,
+    target_duration_s: int = 300,
+    personalization: str = "none"
+) -> dict:
+    """
+    Generate a schema for the given video type using OpenAI structured output.
+    """
+    # OpenAI structured output doesn't support Dict, so convert 'properties' dicts to lists.
+    # Then convert back after getting the response.
+    with open(example_path, "r", encoding="utf-8") as f:
+        example_schema = json.load(f)
+    converted_example_schema_str = get_converted_properties_list_schema_str(example_schema)
+
+    prompt = (
+        "You are an expert in Azure Content Understanding custom analyzer schemas.\n"
+        f"Here is an example schema for {video_type}:\n\n"
+        f"{converted_example_schema_str}\n\n"
+        f"Generate a complete, valid analyzer schema JSON for '{video_type}' videos, "
+        "matching the same format and level of detail.\n"
+        f"- Target clip density: {clip_density} clips per minute.\n"
+        f"- Target total duration: {target_duration_s} seconds.\n"
+        f"- Personalization: {personalization}\n"
+        "Return only the schema JSON."
+    )
+
+    result = openai_assistant.get_structured_output_answer(
+        system_prompt="Generate Azure Content Understanding custom analyzer schemas.",
+        user_prompt=prompt,
+        response_format=SegmentAnalyzer,
+    )
+    result_dict_converted = get_converted_properties_dict_schema_dict(result)
+
+    return result_dict_converted
+
+def add_property_llm(
+    openai_assistant: OpenAIAssistant,
+    current_schema: dict,
+    property_description: str
+) -> dict:
+    """
+    Use OpenAI structured output to add a property to the schema.
+    """
+    # OpenAI structured output doesn't support Dict, so convert 'properties' dicts to lists.
+    # Then convert back after getting the response.
+    converted_schema_str = get_converted_properties_list_schema_str(current_schema)
+
+    prompt = (
+        "You are an expert in JSON schema design. Given the current schema and a user description, "
+        "add a new property to the Segments.items.properties section. Return only the updated JSON schema.\n\n"
+        f"Current schema:\n{converted_schema_str}\n\n"
+        f"User request: {property_description}"
+    )
+    result = openai_assistant.get_structured_output_answer(
+        system_prompt="Add a property to the schema.",
+        user_prompt=prompt,
+        response_format=SegmentAnalyzer,
+    )
+
+    new_schema = get_converted_properties_dict_schema_dict(result)
+
+    return new_schema

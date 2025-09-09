@@ -1,7 +1,104 @@
 import json
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
+from .utility import generate_schema_llm, add_property_llm, OpenAIAssistant
+
+
+EXAMPLE_SCHEMA_TYPE = "soccer"  # Default example schema type if none found
+
+OUTPUT_DIR = Path(__file__).parents[3] / "output"
+
+
+# --- analyzer generation ---
+def human_review(schema_obj: dict, openai_assistant: Optional[OpenAIAssistant]) -> bool:
+    """Interactive schema review. If auto_mode is True, uses auto_review instead."""  
+    print("\n[human_review] Raw LLM output:")
+    print(json.dumps(schema_obj, indent=2))
+
+    if not schema_obj or not isinstance(schema_obj, dict):
+        print("[human_review] Input is not a valid dict. Aborting review.")
+        return False
+
+    while True:
+        props = schema_obj.get("fieldSchema", {}).get("fields", {}).get("Segments", {})
+        items = props.get("items", {}).get("properties", {})
+        approved = {}
+        print("\nReview each schema property for 'Segments':")
+        for key, val in items.items():
+            print(f"\nProperty: {key}\nType: {val.get('type','')}\nDescription: {val.get('description','')}")
+            ans = input("Include this property? (yes/no): ").strip().lower()
+            if ans == 'yes':
+                approved[key] = val
+
+        schema_obj['fieldSchema']['fields']['Segments']['items']['properties'] = approved
+
+        if openai_assistant:
+            # Offer to add a new property
+            add_more = input("\nWould you like to add a new property to this schema? (yes/no): ").strip().lower()
+            if add_more == 'yes':
+                user_desc = input("Describe the property you want to add (e.g., name, type, description): ").strip()
+                schema_obj_str = json.dumps(schema_obj, indent=2)
+                updated_schema = add_property_llm(openai_assistant, schema_obj_str, user_desc)
+                
+                if not isinstance(updated_schema, dict):
+                    print("[human_review] LLM did not return a valid dict. Aborting.")
+                    return schema_obj
+                schema_obj = updated_schema
+                print("[human_review] Property added! Restarting review...")
+                continue
+            else:
+                return schema_obj
+        else:
+            print("\nNo OpenAIAssistant provided, skipping property addition.")
+            return schema_obj
+
+
+def activate_schema(
+        video_type: str,
+        analyzer_dir: Union[str, Path],
+        openai_assistant: Optional[OpenAIAssistant] = None,
+        output_dir: Union[str, Path] = OUTPUT_DIR,
+        clip_density: float = 1.0,
+        target_duration_s: int = 100, 
+        personalization: str = "none",
+        human_in_the_loop_review: bool = True):
+    analyzer_dir = Path(analyzer_dir)
+    output_dir = Path(output_dir)
+
+    schema_path = analyzer_dir / f"{video_type}.json"
+
+    if schema_path.exists():
+        print(f"Schema for '{video_type}' already exists at '{schema_path}'. Using existing schema.")
+    elif not analyzer_dir.exists():
+        raise ValueError(f"Analyzer folder '{analyzer_dir}' does not exist.")
+    elif openai_assistant is None:
+        raise ValueError("OpenAIAssistant instance must be provided to generate new schemas.")
+    else:
+        example_path = analyzer_dir / f"{EXAMPLE_SCHEMA_TYPE}.json"
+        if not example_path.exists():
+            raise ValueError(f"No schema found for '{video_type}' and default example schema '{example_path}' does not exist.")
+        print(f"Using example schema: {example_path} and LLM to generate schema for '{video_type}'.")
+
+        # Generate the initial schema text
+        generated_schema = generate_schema_llm(openai_assistant, video_type, str(example_path), clip_density, target_duration_s, personalization)
+
+        # Warn if description does not mention requested video_type
+        desc = generated_schema.get("description", "").lower()
+        if video_type.lower() not in desc:
+            print(f"Warning: Generated schema description does not mention '{video_type}'. Description: {desc}")
+
+        if human_in_the_loop_review:
+            generated_schema = human_review(generated_schema, openai_assistant)
+
+        # Save the final schema
+        with open(schema_path, "w", encoding="utf-8") as f:
+            json.dump(generated_schema, f, indent=2)
+        print(f"Schema for '{video_type}' saved to '{schema_path}'.")
+    
+    return schema_path
 
 
 # --- result json parsing ---
