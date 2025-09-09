@@ -1,7 +1,9 @@
 import json
 import os
+import tkinter as tk
 from collections import defaultdict
 from pathlib import Path
+from tkinter import simpledialog, messagebox
 from typing import Any, Dict, List, Optional, Union
 
 from .utility import generate_schema_llm, add_property_llm, OpenAIAssistant
@@ -13,47 +15,178 @@ OUTPUT_DIR = Path(__file__).parents[3] / "output"
 
 
 # --- analyzer generation ---
-def human_review(schema_obj: dict, openai_assistant: Optional[OpenAIAssistant]) -> bool:
-    """Interactive schema review. If auto_mode is True, uses auto_review instead."""  
-    print("\n[human_review] Raw LLM output:")
-    print(json.dumps(schema_obj, indent=2))
+def human_review(schema_obj: dict, schema_path: str, openai_assistant=None) -> dict:
+    """
+    Pop-up GUI for schema review using Tkinter.
+    - Save button: writes current approved schema to file (window stays open)
+    - Done button: writes final schema to file and closes window
+    - Allows manual or GPT-assisted property addition
+    """
+    root = tk.Tk()
+    root.title("Schema Review")
+    
+    approved = dict(schema_obj.get("fieldSchema", {}).get("fields", {}).get("Segments", {}).get("items", {}).get("properties", {}))
+    vars_dict = {}
 
-    if not schema_obj or not isinstance(schema_obj, dict):
-        print("[human_review] Input is not a valid dict. Aborting review.")
-        return False
+    # Function to rebuild checkboxes dynamically (e.g., after adding a property)
+    def rebuild_checkboxes():
+        for widget in root.winfo_children():
+            widget.destroy()  # clear previous widgets
+        
+        row = 0
+        tk.Label(root, text="Review Schema Properties for 'Segments':", font=("Arial", 12, "bold")).grid(row=row, column=0, sticky='w')
+        row += 1
+        for key, val in approved.items():
+            var = tk.BooleanVar(value=True)
+            chk = tk.Checkbutton(root, text=f"{key} | {val.get('type','')} | {val.get('description','')}", variable=var, anchor='w', justify='left')
+            chk.grid(row=row, column=0, sticky='w')
+            vars_dict[key] = var
+            row += 1
 
-    while True:
-        props = schema_obj.get("fieldSchema", {}).get("fields", {}).get("Segments", {})
-        items = props.get("items", {}).get("properties", {})
-        approved = {}
-        print("\nReview each schema property for 'Segments':")
-        for key, val in items.items():
-            print(f"\nProperty: {key}\nType: {val.get('type','')}\nDescription: {val.get('description','')}")
-            ans = input("Include this property? (yes/no): ").strip().lower()
-            if ans == 'yes':
-                approved[key] = val
+        # Buttons
+        save_btn = tk.Button(root, text="Save", width=10, command=on_save)
+        save_btn.grid(row=row, column=0, sticky='w')
+        manual_btn = tk.Button(root, text="Add Manual Property", width=20, command=on_add_manual)
+        manual_btn.grid(row=row, column=1, sticky='w')
+        gpt_btn = tk.Button(root, text="Add GPT Property", width=20, command=on_add_gpt)
+        gpt_btn.grid(row=row, column=2, sticky='w')
+        done_btn = tk.Button(root, text="Done", width=10, command=on_done)
+        done_btn.grid(row=row, column=3, sticky='e')
 
-        schema_obj['fieldSchema']['fields']['Segments']['items']['properties'] = approved
+    # Save button callback
+    def on_save():
+        """Save current approved schema to file and refresh checkboxes."""
+        # Get selected checkboxes
+        selected = {k: approved[k] for k, var in vars_dict.items() if var.get()}
+        approved.clear()
+        approved.update(selected)
 
-        if openai_assistant:
-            # Offer to add a new property
-            add_more = input("\nWould you like to add a new property to this schema? (yes/no): ").strip().lower()
-            if add_more == 'yes':
-                user_desc = input("Describe the property you want to add (e.g., name, type, description): ").strip()
-                schema_obj_str = json.dumps(schema_obj, indent=2)
-                updated_schema = add_property_llm(openai_assistant, schema_obj_str, user_desc)
-                
-                if not isinstance(updated_schema, dict):
-                    print("[human_review] LLM did not return a valid dict. Aborting.")
-                    return schema_obj
-                schema_obj = updated_schema
-                print("[human_review] Property added! Restarting review...")
-                continue
+        # Update schema object
+        schema_obj['fieldSchema']['fields']['Segments']['items']['properties'] = dict(approved)
+
+        # Save to file
+        with open(schema_path, "w", encoding="utf-8") as f:
+            json.dump(schema_obj, f, indent=2)
+
+        # Refresh checkboxes to reflect current state
+        vars_dict.clear()
+        rebuild_checkboxes()
+
+        messagebox.showinfo("Saved", f"Schema saved to {schema_path}")
+
+    # Done button callback
+    def on_done():
+        selected = {k: approved[k] for k, var in vars_dict.items() if var.get()}
+        approved.clear()
+        approved.update(selected)
+        schema_obj['fieldSchema']['fields']['Segments']['items']['properties'] = dict(approved)
+        with open(schema_path, "w", encoding="utf-8") as f:
+            json.dump(schema_obj, f, indent=2)
+        messagebox.showinfo("Done", f"Final schema saved to {schema_path}")
+        root.destroy()
+        print("Review completed. Final schema:")
+        print(json.dumps(schema_obj, indent=2))
+
+    def on_add_manual():
+        # Ask for property name
+        name = simpledialog.askstring("Add Property", "Property name:")
+        if not name:
+            return
+
+        # Popup window
+        popup = tk.Toplevel(root)
+        popup.title(f"Define '{name}'")
+
+        # Type dropdown
+        tk.Label(popup, text="Type:").grid(row=0, column=0, sticky='w')
+        type_options = ["string", "date", "time", "number", "integer", "boolean"]
+        type_var = tk.StringVar(value=type_options[0])
+        tk.OptionMenu(popup, type_var, *type_options).grid(row=0, column=1, sticky='w')
+
+        # Method dropdown
+        tk.Label(popup, text="Method:").grid(row=1, column=0, sticky='w')
+        method_options = ["classify", "generate"]
+        method_var = tk.StringVar(value=method_options[0])
+        tk.OptionMenu(popup, method_var, *method_options).grid(row=1, column=1, sticky='w')
+
+        # Description entry
+        tk.Label(popup, text="Description:").grid(row=2, column=0, sticky='w')
+        desc_entry = tk.Entry(popup, width=40)
+        desc_entry.grid(row=2, column=1, sticky='w')
+
+        # Enum options entry (hidden initially)
+        tk.Label(popup, text="Enum options for classify field (comma-separated):").grid(row=3, column=0, sticky='w')
+        enum_entry = tk.Entry(popup, width=40)
+        enum_entry.grid(row=3, column=1, sticky='w')
+
+        def on_method_change(*args):
+            if method_var.get() == "classify":
+                enum_entry.config(state='normal')
             else:
-                return schema_obj
-        else:
-            print("\nNo OpenAIAssistant provided, skipping property addition.")
-            return schema_obj
+                enum_entry.delete(0, tk.END)
+                enum_entry.config(state='disabled')
+
+        method_var.trace_add("write", on_method_change)
+        # Initialize
+        on_method_change()
+
+        # OK button callback
+        def on_ok():
+            fieid_type = type_var.get()
+            fieid_method = method_var.get()
+            fieid_desc = desc_entry.get()
+            prop = {"type": fieid_type, "method": fieid_method, "description": fieid_desc}
+            if fieid_method == "classify":
+                enum_values = [v.strip() for v in enum_entry.get().split(",") if v.strip()]
+                if enum_values:
+                    prop["enum"] = enum_values
+            approved[name] = prop
+            vars_dict.clear()
+            rebuild_checkboxes()
+            popup.destroy()
+
+        tk.Button(popup, text="OK", command=on_ok).grid(row=4, column=0, columnspan=2, pady=5)
+
+        popup.grab_set()
+        popup.focus_set()
+
+    # GPT-assisted addition callback
+    def on_add_gpt():
+        if not openai_assistant:
+            messagebox.showerror("Error", "No OpenAI assistant provided for GPT addition")
+            return
+
+        desc = simpledialog.askstring("Add Property", "Describe the property for GPT:")
+        if not desc:
+            return
+
+        # Show working cue
+        working_label = tk.Label(root, text="GPT is running... ⏳", fg="blue")
+        working_label.grid(row=0, column=1)
+        root.update_idletasks()  # Force UI update
+
+        # Call LLM (this will freeze UI)
+        schema_str = json.dumps(schema_obj, indent=2)
+        new_schema = add_property_llm(openai_assistant, schema_str, desc)
+
+        # Remove cue
+        working_label.destroy()
+
+        if not isinstance(new_schema, dict):
+            messagebox.showerror("Error", "GPT did not return a valid schema")
+            return
+
+        # Update schema and checkboxes
+        schema_obj.update(new_schema)
+        new_items = schema_obj.get("fieldSchema", {}).get("fields", {}).get("Segments", {}).get("items", {}).get("properties", {})
+        approved.clear()
+        approved.update(new_items)
+        vars_dict.clear()
+        rebuild_checkboxes()
+
+    rebuild_checkboxes()
+    root.mainloop()
+    return schema_obj
 
 
 def activate_schema(
@@ -90,13 +223,14 @@ def activate_schema(
         if video_type.lower() not in desc:
             print(f"Warning: Generated schema description does not mention '{video_type}'. Description: {desc}")
 
-        if human_in_the_loop_review:
-            generated_schema = human_review(generated_schema, openai_assistant)
-
-        # Save the final schema
+        # Save the schema
         with open(schema_path, "w", encoding="utf-8") as f:
             json.dump(generated_schema, f, indent=2)
         print(f"Schema for '{video_type}' saved to '{schema_path}'.")
+
+        if human_in_the_loop_review:
+            print("Starting human-in-the-loop review...")
+            human_review(generated_schema, schema_path, openai_assistant)
     
     return schema_path
 
