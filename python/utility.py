@@ -337,6 +337,19 @@ class OpenAIAssistant:
         seed: int = 0,
         temperature: float = 0.0,
     ):
+        """
+        Get a structured output answer from the assistant.
+
+        Args:
+            system_prompt (str): The system prompt.
+            user_prompt (str): The user prompt.
+            response_format (BaseModel): The expected response format as a Pydantic model.
+            seed (int, optional): Random seed for reproducibility. Defaults to 0.
+            temperature (float, optional): Sampling temperature. Defaults to 0.0.
+
+        Returns:
+            BaseModel: The parsed response as an instance of the response_format model.
+        """
         try:
             messages = []
             if system_prompt:
@@ -368,12 +381,15 @@ class OpenAIAssistant:
 
 
 def get_token_count(text: str, model_name: str = "gpt-4o") -> int:
-    """Get the token count of a text.
+    """
+    Get the token count of a text for a given model.
+
     Args:
-        text (str): The text
-        model_name (str): The analyzer name
+        text (str): The text to tokenize.
+        model_name (str): The model name for encoding.
+
     Returns:
-        int: The token count
+        int: The token count.
     """
     enc = tiktoken.encoding_for_model(model_name)
     tokens = enc.encode(text)
@@ -383,12 +399,16 @@ def get_token_count(text: str, model_name: str = "gpt-4o") -> int:
 def _get_next_processing_segments(
     contents: list, start_idx: int, token_size_threshold: int = 32000
 ) -> Tuple[int, str]:
-    """Get the next set of processing segments
+    """
+    Get the next set of processing segments that fit within the token size threshold.
+
     Args:
-        contents (list): The list of segments
-        start_idx (int): The start index
+        contents (list): The list of segments.
+        start_idx (int): The start index.
+        token_size_threshold (int, optional): The token size threshold. Defaults to 32000.
+
     Returns:
-        Tuple[int, str]: The end index and the segment contents
+        Tuple[int, str]: The end index and the segment contents as a string.
     """
     end_idx = start_idx
     segment_contents = ""
@@ -420,12 +440,15 @@ def _get_next_processing_segments(
 def generate_scenes(
     video_segment_result: dict, openai_assistant: OpenAIAssistant
 ) -> VideoSceneResponseWithTranscript:
-    """Generate scenes from the video segment result
+    """
+    Generate scenes from the video segment result using the OpenAI assistant.
+
     Args:
-        video_segment_result (dict): The video segment result
-        openai_assistant (shared_functions.AiAssistant): The AI assistant client
+        video_segment_result (dict): The video segment result.
+        openai_assistant (OpenAIAssistant): The AI assistant client.
+
     Returns:
-        list: The list of scenes with transcripts
+        VideoSceneResponseWithTranscript: The list of scenes with transcripts.
     """
     contents = video_segment_result["result"]["contents"]
 
@@ -463,12 +486,15 @@ def generate_scenes(
 def _extract_transcripts_for_scenes(
     video_segment_result: dict, video_scene_response: VideoSceneResponse
 ) -> VideoSceneResponseWithTranscript:
-    """Extract transcripts for the scenes
+    """
+    Extract transcripts for the scenes.
+
     Args:
-        video_segment_result (dict): The video segment result
-        video_scene_response (VideoSceneResponse): The video scene response
+        video_segment_result (dict): The video segment result.
+        video_scene_response (VideoSceneResponse): The video scene response.
+
     Returns:
-        list: The list of scenes with transcripts
+        VideoSceneResponseWithTranscript: The list of scenes with transcripts.
     """
     if len(video_scene_response.scenes) == 0:
         return VideoSceneResponseWithTranscript(scenes=[])
@@ -503,12 +529,15 @@ def _extract_transcripts_for_scenes(
 def generate_chapters(
     scene_result: VideoSceneResponse, openai_assistant: OpenAIAssistant
 ) -> VideoChapterResponse:
-    """Generate chapters from the scenes
+    """
+    Generate chapters from the scenes using the OpenAI assistant.
+
     Args:
-        scenes (VideoSceneResponse): The list of scenes
-        openai_assistant (shared_functions.AiAssistant): The OpenAI assistant client
+        scene_result (VideoSceneResponse): The list of scenes.
+        openai_assistant (OpenAIAssistant): The OpenAI assistant client.
+
     Returns:
-        list: The list of chapters
+        VideoChapterResponse: The list of chapters.
     """
     scenes = scene_result.scenes
     if len(scenes) == 0:
@@ -533,14 +562,17 @@ def generate_chapters(
 
 
 def aggregate_tags(
-        video_segment_result: dict, openai_assistant: OpenAIAssistant
+    video_segment_result: dict, openai_assistant: OpenAIAssistant
 ) -> VideoTagResponse:
-    """Generate tags from the video segment result
+    """
+    Generate tags from the video segment result using the OpenAI assistant.
+
     Args:
-        video_segment_result (dict): The video segment result
-        openai_assistant (shared_functions.AiAssistant): The AI assistant client
+        video_segment_result (dict): The video segment result.
+        openai_assistant (OpenAIAssistant): The AI assistant client.
+
     Returns:
-        VideoTagResponse: list of tags
+        VideoTagResponse: List of tags.
     """
     contents = video_segment_result["result"]["contents"]
     tags = []
@@ -581,7 +613,7 @@ def get_highlight_plan(
         personalization (str): Personalization string.
 
     Returns:
-        HighlightPlan: The structured highlight plan, or None if failed.
+        Optional[HighlightPlan]: The structured highlight plan, or None if failed.
     """
     # Read the prompt template from the fixed path
     with open(HIGHLIGHT_PLAN_PROMPT_PATH, "r", encoding="utf-8") as f:
@@ -622,6 +654,12 @@ def convert_properties_dict_to_list(data: Any) -> Any:
     """
     Recursively converts all 'properties' dicts in a JSON schema
     to lists of {key, value} objects to match SegmentAnalyzer's KeyValueField model.
+
+    Args:
+        data (Any): The input data (dict, list, or other).
+
+    Returns:
+        Any: The converted data with 'properties' as lists.
     """
     if isinstance(data, dict):
         new_data = {}
@@ -639,6 +677,16 @@ def convert_properties_dict_to_list(data: Any) -> Any:
     
 
 def convert_properties_list_to_dict(data: dict) -> dict:
+    """
+    Recursively converts all 'properties' lists in a JSON schema
+    to dicts to match the expected schema format.
+
+    Args:
+        data (dict): The input data.
+
+    Returns:
+        dict: The converted data with 'properties' as dicts.
+    """
     if isinstance(data, dict):
         new_data = {}
         for k, v in data.items():
@@ -655,10 +703,28 @@ def convert_properties_list_to_dict(data: dict) -> dict:
 
 
 def get_converted_properties_list_schema_str(schema: dict) -> str:
+    """
+    Convert a schema's 'properties' dicts to lists and return as a JSON string.
+
+    Args:
+        schema (dict): The schema dictionary.
+
+    Returns:
+        str: The JSON string of the converted schema.
+    """
     converted_schema = convert_properties_dict_to_list(schema)
     return json.dumps(converted_schema, indent=2)
 
 def get_converted_properties_dict_schema_dict(result: SegmentAnalyzer) -> dict:
+    """
+    Convert a SegmentAnalyzer model's properties lists to dicts.
+
+    Args:
+        result (SegmentAnalyzer): The SegmentAnalyzer model.
+
+    Returns:
+        dict: The converted schema dictionary.
+    """
     result_dict = result.model_dump()
     return convert_properties_list_to_dict(result_dict)
 
@@ -672,6 +738,17 @@ def generate_schema_llm(
 ) -> dict:
     """
     Generate a schema for the given video type using OpenAI structured output.
+
+    Args:
+        openai_assistant (OpenAIAssistant): The OpenAI assistant client.
+        video_type (str): The type of video.
+        example_path (str): Path to the example schema file.
+        clip_density (float, optional): Target clip density. Defaults to 1.0.
+        target_duration_s (int, optional): Target total duration in seconds. Defaults to 300.
+        personalization (str, optional): Personalization string. Defaults to "none".
+
+    Returns:
+        dict: The generated schema as a dictionary.
     """
     # OpenAI structured output doesn't support Dict, so convert 'properties' dicts to lists.
     # Then convert back after getting the response.
@@ -707,6 +784,14 @@ def add_property_llm(
 ) -> dict:
     """
     Use OpenAI structured output to add a property to the schema.
+
+    Args:
+        openai_assistant (OpenAIAssistant): The OpenAI assistant client.
+        current_schema (dict): The current schema dictionary.
+        property_description (str): Description of the property to add.
+
+    Returns:
+        dict: The updated schema dictionary.
     """
     # OpenAI structured output doesn't support Dict, so convert 'properties' dicts to lists.
     # Then convert back after getting the response.

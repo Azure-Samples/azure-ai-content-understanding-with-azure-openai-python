@@ -15,12 +15,21 @@ OUTPUT_DIR = Path(__file__).parents[3] / "output"
 
 
 # --- analyzer generation ---
-def human_review(schema_obj: dict, schema_path: str, openai_assistant=None) -> dict:
+def human_review(
+    schema_obj: dict,
+    schema_path: str,
+    openai_assistant: Optional[OpenAIAssistant] = None
+) -> dict:
     """
-    Pop-up GUI for schema review using Tkinter.
-    - Save button: writes current approved schema to file (window stays open)
-    - Done button: writes final schema to file and closes window
-    - Allows manual or GPT-assisted property addition
+    Launches a Tkinter GUI for human-in-the-loop schema review and editing.
+
+    Args:
+        schema_obj (dict): The schema object to review and edit.
+        schema_path (str): Path to save the reviewed schema.
+        openai_assistant (Optional[OpenAIAssistant]): Assistant for GPT-assisted property addition.
+
+    Returns:
+        dict: The final reviewed schema object.
     """
     root = tk.Tk()
     root.title("Schema Review")
@@ -190,14 +199,31 @@ def human_review(schema_obj: dict, schema_path: str, openai_assistant=None) -> d
 
 
 def activate_schema(
-        video_type: str,
-        analyzer_dir: Union[str, Path],
-        openai_assistant: Optional[OpenAIAssistant] = None,
-        output_dir: Union[str, Path] = OUTPUT_DIR,
-        clip_density: float = 1.0,
-        target_duration_s: int = 100, 
-        personalization: str = "none",
-        human_in_the_loop_review: bool = True):
+    video_type: str,
+    analyzer_dir: Union[str, Path],
+    openai_assistant: Optional[OpenAIAssistant] = None,
+    output_dir: Union[str, Path] = OUTPUT_DIR,
+    clip_density: float = 1.0,
+    target_duration_s: int = 100, 
+    personalization: str = "none",
+    human_in_the_loop_review: bool = True
+) -> Path:
+    """
+    Ensures a schema exists for the given video type, generating and reviewing it if needed.
+
+    Args:
+        video_type (str): The type of video for which to activate a schema.
+        analyzer_dir (Union[str, Path]): Directory containing analyzer schemas.
+        openai_assistant (Optional[OpenAIAssistant]): Assistant for schema generation.
+        output_dir (Union[str, Path], optional): Output directory for results.
+        clip_density (float, optional): Density parameter for schema generation.
+        target_duration_s (int, optional): Target duration in seconds.
+        personalization (str, optional): Personalization string.
+        human_in_the_loop_review (bool, optional): Whether to launch human review.
+
+    Returns:
+        Path: Path to the activated schema file.
+    """
     analyzer_dir = Path(analyzer_dir)
     output_dir = Path(output_dir)
 
@@ -241,7 +267,7 @@ def _extract_value(field_obj: Dict[str, Any]) -> Any:
     Extracts the value from a field object, checking for known value types.
 
     Args:
-        field_obj (dict): The field object containing possible value types.
+        field_obj (Dict[str, Any]): The field object containing possible value types.
 
     Returns:
         Any: The extracted value, or None if not found.
@@ -259,11 +285,11 @@ def extract_segments(
     Extracts segment dictionaries from the analysis JSON.
 
     Args:
-        analysis (dict): The analysis JSON object.
+        analysis (Dict[str, Any]): The analysis JSON object.
         segment_field (str, optional): The field name for segments. Defaults to "Segments".
 
     Returns:
-        list: List of segment dictionaries.
+        List[Dict[str, Any]]: List of segment dictionaries.
     """
     out = []
     for content in analysis["result"]["contents"]:
@@ -283,24 +309,22 @@ def smart_highlight_filter(
     event_field: str = "PlayEvent",
     score_field: str = "HighlightScore",
     rare_event_weight: float = 1.5,
-    min_per_event: int = 1,
     n_quantile: float = 0.4
 ) -> List[Dict[str, Any]]:
     """
     Filters segments to select highlights based on scores, event rarity, and coverage.
 
     Args:
-        segments (list): List of segment dictionaries.
+        segments (List[Dict[str, Any]]): List of segment dictionaries.
         k_start (int, optional): Number of segments to always keep from the start. Defaults to 4.
         k_end (int, optional): Number of segments to always keep from the end. Defaults to 4.
         event_field (str, optional): Field name for event type. Defaults to "PlayEvent".
         score_field (str, optional): Field name for highlight score. Defaults to "HighlightScore".
         rare_event_weight (float, optional): Weight multiplier for rare events. Defaults to 1.5.
-        min_per_event (int, optional): Minimum per event type. Defaults to 1.
         n_quantile (float, optional): Fraction of core candidates to keep. Defaults to 0.4.
 
     Returns:
-        list: Filtered list of segment dictionaries.
+        List[Dict[str, Any]]: Filtered list of segment dictionaries.
     """
     n = len(segments)
     if n == 0:
@@ -359,7 +383,7 @@ def get_filtered_segments(
 
     Args:
         input_path (str): Path to the input JSON file.
-        output_path (str, optional): Path to write the filtered segments. If None, a default is used.
+        output_path (Optional[str], optional): Path to write the filtered segments. If None, a default is used.
 
     Returns:
         str: Path to the output file containing filtered segments.
