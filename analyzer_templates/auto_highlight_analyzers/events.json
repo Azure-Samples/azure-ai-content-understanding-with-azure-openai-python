@@ -1,0 +1,137 @@
+{
+  "description": "Event highlights analyzer – segments video at key moments in conferences, keynotes, panels, and award ceremonies, extracting flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant event moment that contributes to a compelling highlights reel: Speaker introductions, Keynote speeches, Panel discussions, Q&A exchanges, Award presentations, Audience reactions (applause, laughter), Sponsor messages, Breaks and networking cues, Stage transitions, Performances. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language summary of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment.",
+              "enum": [
+                "LiveSpeech",
+                "PanelDiscussion",
+                "QnASession",
+                "AwardPresentation",
+                "Performance",
+                "Break",
+                "Advertisement",
+                "Networking",
+                "StageTransition",
+                "Other"
+              ]
+            },
+            "EventType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Specific event moment in this segment.",
+              "enum": [
+                "SpeakerIntroduction",
+                "KeynoteSpeech",
+                "PanelTalk",
+                "AudienceQuestion",
+                "SpeakerAnswer",
+                "Applause",
+                "Laughter",
+                "SponsorMessage",
+                "SessionStart",
+                "SessionEnd",
+                "NetworkingCue",
+                "AwardGiven",
+                "PerformanceSegment",
+                "Other"
+              ]
+            },
+            "SpeakerName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the speaker or performer in this segment."
+            },
+            "SpeakerRole": {
+              "type": "string",
+              "method": "classify",
+              "description": "Role of the speaker or participant.",
+              "enum": [
+                "KeynoteSpeaker",
+                "Panelist",
+                "Moderator",
+                "Presenter",
+                "Host",
+                "Awardee",
+                "Performer",
+                "Other"
+              ]
+            },
+            "SessionTitle": {
+              "type": "string",
+              "method": "generate",
+              "description": "Title of the session or topic shown on-screen."
+            },
+            "QuestionText": {
+              "type": "string",
+              "method": "generate",
+              "description": "Text of the audience question (if EventType=AudienceQuestion)."
+            },
+            "AnswerSummary": {
+              "type": "string",
+              "method": "generate",
+              "description": "One-sentence summary of the response or follow-up."
+            },
+            "SponsorName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the sponsor or partner featured."
+            },
+            "AudienceReaction": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of audience reaction.",
+              "enum": [
+                "Applause",
+                "Laughter",
+                "Silence",
+                "Cheers",
+                "Other"
+              ]
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

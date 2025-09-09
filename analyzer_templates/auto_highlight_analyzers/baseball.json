@@ -1,0 +1,220 @@
+{
+  "description": "Baseball highlights analyzer – segments video at key narrative plays and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant baseball moment that contributes to a compelling highlight reel: Home Runs, Strikeouts, Walk-offs, Double Plays, Diving Catches, Stolen Bases, Pitching Changes, Manager Visits, Player Celebrations, Replay Reviews, Errors, Pickoffs, Key At-Bats, and other narrative-driven events. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of the segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of the segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "One-sentence natural language summary of the play or event."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Broad context category of this segment.",
+              "enum": [
+                "LiveGameplay",
+                "Replay",
+                "ManagerVisit",
+                "HalfInningBreak",
+                "PitchingChange",
+                "Advertisement",
+                "Studio",
+                "Other"
+              ]
+            },
+            "PlayEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary baseball moment in this segment.",
+              "enum": [
+                "HomeRun",
+                "Strikeout",
+                "WalkOff",
+                "DoublePlay",
+                "Catch",
+                "StolenBase",
+                "Error",
+                "Pickoff",
+                "StealAttempt",
+                "WildPitch",
+                "HitByPitch",
+                "KeyAtBat",
+                "Other"
+              ]
+            },
+            "HomeTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Home team name from the on-screen scoreboard."
+            },
+            "AwayTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Away team name from the on-screen scoreboard."
+            },
+            "HomeTeamScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Home team’s run total before this segment."
+            },
+            "AwayTeamScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Away team’s run total before this segment."
+            },
+            "Inning": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Current inning number (1–9+)."
+            },
+            "Half": {
+              "type": "string",
+              "method": "classify",
+              "description": "Top or Bottom half of the inning.",
+              "enum": [
+                "Top",
+                "Bottom",
+                "Unknown"
+              ]
+            },
+            "Outs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Number of outs at the start of this segment."
+            },
+            "Balls": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Current ball count (0–3)."
+            },
+            "Strikes": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Current strike count (0–2)."
+            },
+            "RunnersOnBase": {
+              "type": "string",
+              "method": "generate",
+              "description": "Bases occupied (e.g., '1B,3B') or 'None'."
+            },
+            "PitcherName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the pitcher delivering the pitch."
+            },
+            "PitchType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of pitch thrown.",
+              "enum": [
+                "Fastball",
+                "Curveball",
+                "Slider",
+                "Changeup",
+                "Sinker",
+                "Splitter",
+                "Other"
+              ]
+            },
+            "PitchSpeedMph": {
+              "type": "number",
+              "method": "generate",
+              "description": "Pitch velocity in miles per hour (if visible)."
+            },
+            "BatterName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the batter at the plate."
+            },
+            "DefensivePlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the defensive player involved (e.g., for catch or play)."
+            },
+            "CatchType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of catch in fielding plays.",
+              "enum": [
+                "FlyBall",
+                "GroundBall",
+                "LineDrive",
+                "DivingCatch",
+                "Other"
+              ]
+            },
+            "PlayResult": {
+              "type": "string",
+              "method": "classify",
+              "description": "Result of the play.",
+              "enum": [
+                "Out",
+                "Single",
+                "Double",
+                "Triple",
+                "HomeRun",
+                "Walk",
+                "Strikeout",
+                "Error",
+                "Other"
+              ]
+            },
+            "CommentaryExcitement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level of the commentary.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "CrowdNoiseLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated crowd noise level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}
