@@ -1,13 +1,13 @@
-from typing import Any, List, Literal, Optional, Tuple, Union
 import json
 import re
 from string import Template
+from typing import Any, List, Literal, Optional, Tuple, Union
 
-from openai import AzureOpenAI
-import tiktoken
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from tenacity import retry, wait_random_exponential, stop_after_attempt
+from openai import AzureOpenAI
 from pydantic import BaseModel, Field
+from tenacity import retry, stop_after_attempt, wait_random_exponential
+import tiktoken
 
 SCENE_GENERATION_PROMPT = """
     You are given the segment index, descriptions and the transcripts of clip segments from a video with timestamps in miliseconds. Combine the segments into scenes based on the 2 main steps:

@@ -1,13 +1,13 @@
 import json
 import logging
-import tempfile
 import shutil
-from typing import Any, Dict, List, Optional, Union
+import tempfile
 from pathlib import Path
-from moviepy import VideoFileClip, concatenate_videoclips
+from typing import Any, Dict, List, Optional, Union
+
+from moviepy import VideoFileClip, concatenate_videoclips, vfx
 from moviepy.video.fx.FadeIn import FadeIn
 from moviepy.video.fx.FadeOut import FadeOut
-from moviepy import vfx
 
 
 def get_video_info(video_path: Union[str, Path]) -> Dict[str, Any]:
