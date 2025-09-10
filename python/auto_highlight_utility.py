@@ -6,7 +6,7 @@ from pathlib import Path
 from tkinter import simpledialog, messagebox
 from typing import Any, Dict, List, Optional, Union
 
-from .utility import generate_schema_llm, add_property_llm, OpenAIAssistant
+from .utility import generate_schema_llm, add_field_llm, OpenAIAssistant
 
 
 EXAMPLE_SCHEMA_TYPE = "soccer"  # Default example schema type if none found
@@ -26,7 +26,7 @@ def human_review(
     Args:
         schema_obj (dict): The schema object to review and edit.
         schema_path (str): Path to save the reviewed schema.
-        openai_assistant (Optional[OpenAIAssistant]): Assistant for GPT-assisted property addition.
+        openai_assistant (Optional[OpenAIAssistant]): Assistant for GPT-assisted field addition.
 
     Returns:
         dict: The final reviewed schema object.
@@ -37,13 +37,13 @@ def human_review(
     approved = dict(schema_obj.get("fieldSchema", {}).get("fields", {}).get("Segments", {}).get("items", {}).get("properties", {}))
     vars_dict = {}
 
-    # Function to rebuild checkboxes dynamically (e.g., after adding a property)
+    # Function to rebuild checkboxes dynamically (e.g., after adding a field)
     def rebuild_checkboxes():
         for widget in root.winfo_children():
             widget.destroy()  # clear previous widgets
         
         row = 0
-        tk.Label(root, text="Review Schema Properties for 'Segments':", font=("Arial", 12, "bold")).grid(row=row, column=0, sticky='w')
+        tk.Label(root, text="Review Schema Fields for 'Segments':", font=("Arial", 12, "bold")).grid(row=row, column=0, sticky='w')
         row += 1
         for key, val in approved.items():
             var = tk.BooleanVar(value=True)
@@ -55,9 +55,9 @@ def human_review(
         # Buttons
         save_btn = tk.Button(root, text="Save", width=10, command=on_save)
         save_btn.grid(row=row, column=0, sticky='w')
-        manual_btn = tk.Button(root, text="Add Manual Property", width=20, command=on_add_manual)
+        manual_btn = tk.Button(root, text="Add Field Manually", width=20, command=on_add_manual)
         manual_btn.grid(row=row, column=1, sticky='w')
-        gpt_btn = tk.Button(root, text="Add GPT Property", width=20, command=on_add_gpt)
+        gpt_btn = tk.Button(root, text="Add Field by GPT", width=20, command=on_add_gpt)
         gpt_btn.grid(row=row, column=2, sticky='w')
         done_btn = tk.Button(root, text="Done", width=10, command=on_done)
         done_btn.grid(row=row, column=3, sticky='e')
@@ -97,8 +97,8 @@ def human_review(
         print(json.dumps(schema_obj, indent=2))
 
     def on_add_manual():
-        # Ask for property name
-        name = simpledialog.askstring("Add Property", "Property name:")
+        # Ask for field name
+        name = simpledialog.askstring("Add Field", "field name:")
         if not name:
             return
 
@@ -108,7 +108,7 @@ def human_review(
 
         # Type dropdown
         tk.Label(popup, text="Type:").grid(row=0, column=0, sticky='w')
-        type_options = ["string", "date", "time", "number", "integer", "boolean"]
+        type_options = ["string", "date", "time", "number", "integer"]
         type_var = tk.StringVar(value=type_options[0])
         tk.OptionMenu(popup, type_var, *type_options).grid(row=0, column=1, sticky='w')
 
@@ -165,7 +165,7 @@ def human_review(
             messagebox.showerror("Error", "No OpenAI assistant provided for GPT addition")
             return
 
-        desc = simpledialog.askstring("Add Property", "Describe the property for GPT:")
+        desc = simpledialog.askstring("Add Field", "Describe the field for GPT:")
         if not desc:
             return
 
@@ -176,7 +176,7 @@ def human_review(
 
         # Call LLM (this will freeze UI)
         schema_str = json.dumps(schema_obj, indent=2)
-        new_schema = add_property_llm(openai_assistant, schema_str, desc)
+        new_schema = add_field_llm(openai_assistant, schema_str, desc)
 
         # Remove cue
         working_label.destroy()

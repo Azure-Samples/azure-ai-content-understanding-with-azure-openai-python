@@ -777,18 +777,18 @@ def generate_schema_llm(
 
     return result_dict_converted
 
-def add_property_llm(
+def add_field_llm(
     openai_assistant: OpenAIAssistant,
     current_schema: dict,
-    property_description: str
+    field_description: str
 ) -> dict:
     """
-    Use OpenAI structured output to add a property to the schema.
+    Use OpenAI structured output to add a field to the schema.
 
     Args:
         openai_assistant (OpenAIAssistant): The OpenAI assistant client.
         current_schema (dict): The current schema dictionary.
-        property_description (str): Description of the property to add.
+        field_description (str): Description of the field to add.
 
     Returns:
         dict: The updated schema dictionary.
@@ -799,12 +799,12 @@ def add_property_llm(
 
     prompt = (
         f"You are an expert in JSON schema design. Given the current schema and a user description, "
-        f"add a new property to the Segments.items.properties section. Return only the updated JSON schema.\n\n"
+        f"add a new field to the Segments.items.properties section. Return only the updated JSON schema.\n\n"
         f"Current schema:\n{converted_schema_str}\n\n"
-        f"User request: {property_description}"
+        f"User request: {field_description}"
     )
     result = openai_assistant.get_structured_output_answer(
-        system_prompt="Add a property to the schema.",
+        system_prompt="Add a field to the schema.",
         user_prompt=prompt,
         response_format=SegmentAnalyzer,
     )
