@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Literal, Optional, Tuple, Union
 import json
 import re
 from string import Template
@@ -148,8 +148,8 @@ class VideoChapterResponse(BaseModel):
 
 
 class MMIField(BaseModel):
-    type: str
-    method: str
+    type: Literal["string", "date", "time", "number", "integer"]
+    method: Literal["classify", "generate"]
     description: str
     enum: Optional[List[str]] = None
 
@@ -761,11 +761,11 @@ def generate_schema_llm(
         f"Here is an example schema for {video_type}:\n\n"
         f"{converted_example_schema_str}\n\n"
         f"Generate a complete, valid analyzer schema JSON for '{video_type}' videos, "
-        "matching the same format and level of detail.\n"
+        f"matching the same format and level of detail.\n"
         f"- Target clip density: {clip_density} clips per minute.\n"
         f"- Target total duration: {target_duration_s} seconds.\n"
         f"- Personalization: {personalization}\n"
-        "Return only the schema JSON."
+        f"Return only the schema JSON."
     )
 
     result = openai_assistant.get_structured_output_answer(
@@ -798,8 +798,8 @@ def add_property_llm(
     converted_schema_str = get_converted_properties_list_schema_str(current_schema)
 
     prompt = (
-        "You are an expert in JSON schema design. Given the current schema and a user description, "
-        "add a new property to the Segments.items.properties section. Return only the updated JSON schema.\n\n"
+        f"You are an expert in JSON schema design. Given the current schema and a user description, "
+        f"add a new property to the Segments.items.properties section. Return only the updated JSON schema.\n\n"
         f"Current schema:\n{converted_schema_str}\n\n"
         f"User request: {property_description}"
     )
