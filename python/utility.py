@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from string import Template
 from typing import Any, List, Literal, Optional, Tuple, Union
@@ -37,7 +38,9 @@ DEDUP_PROMPT = """
     ${tag_list}
     """
 
-HIGHLIGHT_PLAN_PROMPT_PATH = "/workspaces/azure-ai-content-understanding-with-azure-openai-python/python/reasoning_prompt.txt"
+BASE_DIR = os.path.dirname(__file__)
+
+HIGHLIGHT_PLAN_PROMPT_PATH = os.path.join(BASE_DIR, "reasoning_prompt.txt")
 
 
 class VideoTagResponse(BaseModel):
