@@ -339,6 +339,7 @@ class OpenAIAssistant:
         response_format: BaseModel,
         seed: int = 0,
         temperature: float = 0.0,
+        is_model_after_2024: bool = False,
     ):
         """
         Get a structured output answer from the assistant.
@@ -359,7 +360,7 @@ class OpenAIAssistant:
                 messages.append({"role": "system", "content": system_prompt})
             if user_prompt:
                 messages.append({"role": "user", "content": user_prompt})
-            if "o3" in self.model:  # TODO: expand the list of models
+            if is_model_after_2024:
                 completion = self.client.chat.completions.parse(
                     model=self.model,
                     messages=messages,
@@ -646,6 +647,7 @@ def get_highlight_plan(
             user_prompt=user_message,
             response_format=HighlightPlan,
             temperature=0.0,
+            is_model_after_2024=True,
         )
         return result
     except Exception as e:
@@ -775,6 +777,7 @@ def generate_schema_llm(
         system_prompt="Generate Azure Content Understanding custom analyzer schemas.",
         user_prompt=prompt,
         response_format=SegmentAnalyzer,
+        is_model_after_2024=True,
     )
     result_dict_converted = get_converted_properties_dict_schema_dict(result)
 
@@ -810,6 +813,7 @@ def add_field_llm(
         system_prompt="Add a field to the schema.",
         user_prompt=prompt,
         response_format=SegmentAnalyzer,
+        is_model_after_2024=True,
     )
 
     new_schema = get_converted_properties_dict_schema_dict(result)
