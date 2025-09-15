@@ -11,7 +11,7 @@ from .utility import generate_schema_llm, add_field_llm, OpenAIAssistant
 
 EXAMPLE_SCHEMA_TYPE = "soccer"  # Default example schema type if none found
 
-OUTPUT_DIR = Path(__file__).parents[3] / "output"
+DEFAULT_OUTPUT_DIR = Path(__file__).parents[3] / "output"
 
 
 # --- analyzer generation ---
@@ -202,7 +202,7 @@ def activate_schema(
     video_type: str,
     analyzer_dir: Union[str, Path],
     openai_assistant: Optional[OpenAIAssistant] = None,
-    output_dir: Union[str, Path] = OUTPUT_DIR,
+    output_dir: Union[str, Path] = DEFAULT_OUTPUT_DIR,
     clip_density: float = 1.0,
     target_duration_s: int = 100, 
     personalization: str = "none",
