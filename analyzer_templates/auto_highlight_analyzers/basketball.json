@@ -1,0 +1,172 @@
+{
+  "description": "Basketball highlights analyzer – segments video at key narrative moments and extracts flat metadata for each clip.",
+  "baseAnalyzerId": "prebuilt-videoAnalyzer",
+  "config": {
+    "returnDetails": true,
+    "segmentationMode": "custom",
+    "segmentationDefinition": "Segment the video at each significant basketball moment that contributes to a compelling highlight reel: Dunks, Three-point Shots, Blocks, Steals, Assists, Rebounds, Free Throws, Turnovers, Jump Balls, Fouls, Timeouts, Substitutions, Coach Reactions, Crowd Celebrations, and other narrative-driven events. Each segment should capture exactly one distinct moment."
+  },
+  "fieldSchema": {
+    "fields": {
+      "Segments": {
+        "type": "array",
+        "method": "generate",
+        "items": {
+          "type": "object",
+          "properties": {
+            "SegmentId": {
+              "type": "string",
+              "method": "generate",
+              "description": "Unique identifier for this segment."
+            },
+            "StartTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Start time of this segment in milliseconds."
+            },
+            "EndTimeMs": {
+              "type": "integer",
+              "method": "generate",
+              "description": "End time of this segment in milliseconds."
+            },
+            "Description": {
+              "type": "string",
+              "method": "generate",
+              "description": "Natural language description of what happens in this segment."
+            },
+            "SegmentType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Overall context of this segment.",
+              "enum": [
+                "LiveGameplay",
+                "Replay",
+                "Timeout",
+                "HalftimeShow",
+                "Advertisement",
+                "Studio",
+                "Other"
+              ]
+            },
+            "PlayEvent": {
+              "type": "string",
+              "method": "classify",
+              "description": "Primary basketball moment in this segment.",
+              "enum": [
+                "Dunk",
+                "ThreePointer",
+                "Block",
+                "Steal",
+                "Assist",
+                "Rebound",
+                "FreeThrow",
+                "Turnover",
+                "JumpBall",
+                "Foul",
+                "Substitution",
+                "Timeout",
+                "Other"
+              ]
+            },
+            "HomeTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Home team name from the on-screen scoreboard."
+            },
+            "AwayTeamName": {
+              "type": "string",
+              "method": "generate",
+              "description": "Away team name from the on-screen scoreboard."
+            },
+            "HomeTeamScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Home team’s score at the start of this segment."
+            },
+            "AwayTeamScore": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Away team’s score at the start of this segment."
+            },
+            "Quarter": {
+              "type": "string",
+              "method": "classify",
+              "description": "Game period shown on the scoreboard.",
+              "enum": [
+                "1stQuarter",
+                "2ndQuarter",
+                "3rdQuarter",
+                "4thQuarter",
+                "Overtime",
+                "Unknown"
+              ]
+            },
+            "GameClock": {
+              "type": "string",
+              "method": "generate",
+              "description": "Game clock value at the start of this segment (MM:SS)."
+            },
+            "ShotClock": {
+              "type": "integer",
+              "method": "generate",
+              "description": "Remaining shot clock time at the start of this segment (seconds)."
+            },
+            "ScoringPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who scored (if applicable)."
+            },
+            "AssistingPlayer": {
+              "type": "string",
+              "method": "generate",
+              "description": "Name of the player who provided the assist (if applicable)."
+            },
+            "FoulType": {
+              "type": "string",
+              "method": "classify",
+              "description": "Type of foul committed (if PlayEvent=Foul).",
+              "enum": [
+                "Personal",
+                "Technical",
+                "Offensive",
+                "Flagrant",
+                "Other"
+              ]
+            },
+            "CommentaryExcitement": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated excitement level of the commentary.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High",
+                "Very High"
+              ]
+            },
+            "CrowdNoiseLevel": {
+              "type": "string",
+              "method": "classify",
+              "description": "Estimated crowd noise level.",
+              "enum": [
+                "Low",
+                "Medium",
+                "High"
+              ]
+            },
+            "InvolvedPlayers": {
+              "type": "string",
+              "method": "generate",
+              "description": "Comma-separated list of players prominently involved."
+            },
+            "HighlightScore": {
+              "type": "number",
+              "method": "generate",
+              "description": "AI-generated highlight-worthiness score between 0.0 and 1.0."
+            }
+          }
+        }
+      }
+    }
+  }
+}

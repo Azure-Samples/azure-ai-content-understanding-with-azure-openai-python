@@ -11,6 +11,7 @@ Welcome! Content Understanding is an innovative solution designed to analyze and
 | File | Description |
 | --- | --- |
 | [video_chapter_generation.ipynb](notebooks/video_chapter_generation.ipynb) | Extract semantic descriptions using content understanding API, and then leverage OpenAI to group into video chapters. |
+| [auto_highlight_generation.ipynb](notebooks/auto_highlight_generation.ipynb) | Generate video highlights from a video file using Azure AI services and OpenAI, including schema auto generation, content analysis, segment filtering, highlight planning, and video stitching. |
 
 
 ## Getting started
