@@ -1,5 +1,5 @@
 {
-    "description": "Generatinggit stat content understanding from video.",
+    "description": "Generating content understanding from video.",
     "baseAnalyzerId": "prebuilt-videoAnalyzer",
     "config": {
         "returnDetails": true,
