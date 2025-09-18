@@ -1,5 +1,5 @@
 {
-    "description": "Generate content understanding from video.",
+    "description": "Generatinggit stat content understanding from video.",
     "baseAnalyzerId": "prebuilt-videoAnalyzer",
     "config": {
         "returnDetails": true,
@@ -15,6 +15,7 @@
             "pt-BR",
             "zh-CN"
         ],
+        "enableFace": false,
         "segmentationMode": "noSegmentation"
     },
     "fieldSchema": {
