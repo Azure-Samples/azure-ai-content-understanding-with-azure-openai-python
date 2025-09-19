@@ -3,14 +3,15 @@
 Welcome! Content Understanding is an innovative solution designed to analyze and interpret diverse media types, including documents, images, audio, and video. It transforms this content into structured, organized, and searchable data. In this sample, we will demonstrate how to extract semantic information from you file, and send these information to Azure OpenAI to achive complex works.
 
 
-- The samples in this repository default to the latest preview API version: **(2024-12-01-preview)**.
+- The samples in this repository default to the latest preview API version: **(2025-05-01-preview)**.
 
 
 ## Samples
 
 | File | Description |
 | --- | --- |
-| [video_chapter_generation.ipynb](notebooks/video_chapter_generation.ipynb) | Extract semantic descriptions using content understanding API, and then leverage OpenAI to group into video chapters. |
+| [video_chapter_generation.ipynb](notebooks/video_chapter_generation.ipynb) | Extract semantic descriptions for a video using content understanding API, and then leverage OpenAI to group into video chapters. |
+| [video_tag_generation.ipynb.ipynb](notebooks/video_tag_generation.ipynb.ipynb) | Generate descriptive tags for a video using content understanding API, and then leverage OpenAI to deduplicate and aggregate them. |
 | [auto_highlight_generation.ipynb](notebooks/auto_highlight_generation.ipynb) | Generate video highlights from a video file using Azure AI services and OpenAI, including schema auto generation, content analysis, segment filtering, highlight planning, and video stitching. |
 
 
