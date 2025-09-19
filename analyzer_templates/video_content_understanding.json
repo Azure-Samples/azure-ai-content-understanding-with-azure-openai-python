@@ -1,6 +1,6 @@
 {
     "description": "Generating content understanding from video.",
-    "scenario": "videoShot",
+    "baseAnalyzerId": "prebuilt-videoAnalyzer",
     "config": {
         "returnDetails": true,
         "locales": [
@@ -15,15 +15,14 @@
             "pt-BR",
             "zh-CN"
         ],
-        "enableFace": false
+        "enableFace": false,
+        "segmentationMode": "noSegmentation"
     },
     "fieldSchema": {
-        "name": "Content Understanding",
-        "descriptions": "Generate content understanding from video.",
         "fields": {
             "segmentDescription": {
                 "type": "string",
-                "description": "Detailed summary of the video segment, focusing on people, places, and actions taking place."
+                "description": "Detailed summary of the video segment, focusing on people, places, and actions taking place. Segment the video into stories or chapters. A story (chapter) in a video is a self-contained portion of the program dedicated to a specific news story, topic, or theme. Each segment typically includes a distinct introduction, development, and (sometimes) a conclusion, and can feature a combination of elements such as reporter narration, interviews, sound bites, relevant footage (B-roll), and graphics. "
             }
         }
     }
